@@ -2,8 +2,8 @@ import streamlit as st
 import os
 from groq import Groq
 
-st.set_page_config(page_title="Talabat QA Engine", layout="centered")
-st.title("🚀 Talabat QA Engine (Strict Mode)")
+st.set_page_config(page_title="Talabat Log Engine", layout="centered")
+st.title("🚀 Talabat Log Engine")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 
@@ -21,29 +21,30 @@ chat_input = st.text_area("Paste Chat Transcript Here:", height=400)
 
 if st.button("Generate Log"):
     if chat_input:
-        with st.spinner('Extracting data...'):
+        with st.spinner('Extracting facts...'):
             try:
-                # الـ System Prompt هنا أجبرناه يكون آلة (Data Extractor)
-                system_prompt = f"""
-                You are a strict data logger. Extract information from the chat and output ONLY in this exact format:
-                CST: [Issue/Complaint] // [Context/Details] // [Agent Action] // [Status/Resolution]
+                # الـ Prompt ده هيمنعه يكتب كلمة واحدة زيادة عن اللي حصل
+                system_prompt = """
+                You are a Transcription Machine. 
+                DO NOT summarize. DO NOT infer procedures. DO NOT add steps that did not happen in the chat.
+                Extract facts ONLY. 
+                Output format must be exactly:
+                CST: [Customer Issue as written in chat] // Agent: [My specific response/action as written in chat] // Status: [Current final state]
                 
                 Rules:
-                1. DO NOT write full sentences.
-                2. Use the provided abbreviations ONLY.
-                3. DO NOT add intro, outro, or explanations.
-                4. Be concise and strictly follow the '//' format.
-                
-                Abbreviations: CST, RST, WDT, RNA, FU, OTW, ROP, SLA, ASAP, Info, TC, ETA, R&V, OT, T&C, SPV, TL, SME, VP, PDT, PIC, SS, Ven, Comp, WFA, OSU, EDT, NFA, NAT, NFAT, Bot, SOP, HVC, App, CNA, BOA, Min, CBH, CGH, Msg, Under Prep, Dr, H, HC, BRB, PR, FR, T2, T3, ANS, Num, SMS, Acc, RM, AM, MCB, BL.
+                1. If I did not take an action, write 'NAT'.
+                2. Use the provided abbreviations.
+                3. If the info is missing, write 'N/A'.
+                4. No polite phrases, no introductions, no explanations.
                 """
 
                 chat_completion = client.chat.completions.create(
                     messages=[
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": f"Extract the log from this chat: {chat_input}"}
+                        {"role": "user", "content": f"Transcript: {chat_input}"}
                     ],
                     model="llama-3.3-70b-versatile",
-                    temperature=0.0  # صفر عشان يمنع التجويد تماماً
+                    temperature=0.0
                 )
                 
                 st.code(chat_completion.choices[0].message.content, language=None)
