@@ -40,7 +40,7 @@ DRIVE_LIST = [
 ]
 
 # 3. UI
-st.title("🍔 Talabat Log Tool (Master Data)")
+st.title("🍔 talabat comment tool")
 st.markdown("---")
 
 col_input1, col_input2 = st.columns([2, 1])
@@ -49,7 +49,7 @@ with col_input1:
 with col_input2:
     selected_drive = st.selectbox("Select Contact Drive:", options=DRIVE_LIST)
 
-if st.button("🚀 Generate Comment"):
+if st.button("🚀 Generate"):
     if chat_input:
         with st.spinner('Analyzing...'):
             api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
