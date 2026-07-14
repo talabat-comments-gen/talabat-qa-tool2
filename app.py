@@ -2,8 +2,8 @@ import streamlit as st
 import os
 from groq import Groq
 
-st.set_page_config(page_title="Talabat Log Engine", layout="centered")
-st.title("🚀 Talabat Log Engine (Agent Mode)")
+st.set_page_config(page_title="Talabat Log", layout="centered")
+st.title("🚀 Talabat Log Engine")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 
@@ -23,18 +23,18 @@ if st.button("Generate Log"):
     if chat_input:
         with st.spinner('Summarizing...'):
             try:
-                # الـ Prompt ده هيخليه يكتب بلسانك أنت (بصيغة المتكلم)
+                # الـ Prompt الجديد صارم جداً
                 system_prompt = """
-                You are the agent. Write a summary of the chat as if YOU are the agent (use 'I').
-                Combine all actions into one single, short paragraph.
-                DO NOT repeat 'CST' or 'Agent' for every line.
+                You are a Talabat agent writing a simple log.
                 Format: 
-                CST: [Issue] // Agent: [I did X, Y, Z, then ended chat nicely]
-                
+                CST: [The issue] // Agent: [I + actions, separated by commas] // Status: [Final state]
+
                 Rules:
-                1. Always use 'I' when talking about agent actions.
-                2. If the conversation finished, end with 'ended chat nicely'.
-                3. Keep it professional and very short.
+                1. Use very simple English.
+                2. NO status codes (e.g., NO 'DELIVERED', NO 'R-OD').
+                3. If customer stops responding, write: 'ended chat since customer not responding'.
+                4. Do not be polite or professional, be direct and fast.
+                5. Use 'I' for agent actions.
                 """
 
                 chat_completion = client.chat.completions.create(
