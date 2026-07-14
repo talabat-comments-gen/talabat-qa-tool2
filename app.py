@@ -3,79 +3,74 @@ import os
 from groq import Groq
 
 # 1. Config
-st.set_page_config(page_title="Surgical Pro v15", layout="wide")
+st.set_page_config(page_title="Surgical Pro v16", layout="centered")
 
-# Session State for Memory
 if "golden_examples" not in st.session_state: st.session_state.golden_examples = []
-if "option_a" not in st.session_state: st.session_state.option_a = ""
-if "option_b" not in st.session_state: st.session_state.option_b = ""
-if "displayed_content" not in st.session_state: st.session_state.displayed_content = ""
+if "selected_result" not in st.session_state: st.session_state.selected_result = ""
 
-st.title("🚀 Surgical Pro v15 (Control Center)")
+st.title("🚀 Surgical Pro v16")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
-# 2. Main Input
 chat_input = st.text_area("Paste chat transcript:", height=150)
 
-if st.button("Generate Options"):
+if st.button("Generate 4 Variations"):
     if chat_input:
-        with st.spinner('Generating smart alternatives...'):
+        with st.spinner('Thinking...'):
             memory_str = "\n".join(st.session_state.golden_examples)
             
+            # أمر صريح بإلغاء UNCLEAR وإنتاج 4 خيارات
             prompt = f"""
-            You are a Senior Talabat Agent. Generate TWO versions of the report.
+            You are a Senior Talabat Agent. Generate FOUR distinct variations (A, B, C, D).
             
             Memory (Use this style): {memory_str}
             
-            Rules:
-            1. Output EXACTLY as follows:
-            [OPTION_A]
+            Format for each:
+            [OPTION_X]
             [SUMMARY]: ...
             [DATA]: [Issue] // [Details] // [Action] // [Order ID]
-            [UNCLEAR]: ...
             
-            [OPTION_B]
-            [SUMMARY]: ...
-            [DATA]: [Issue] // [Details] // [Action] // [Order ID]
-            [UNCLEAR]: ...
-            
-            2. NO ARABIC. Use abbreviations.
+            STRICT RULES:
+            - NO UNCLEAR section.
+            - NO ARABIC.
+            - Use abbreviations (CST, RST, RNA).
             """
             
             response = client.chat.completions.create(
                 messages=[{"role": "system", "content": prompt}, {"role": "user", "content": f"Transcript: {chat_input}"}],
                 model="llama-3.3-70b-versatile", temperature=0.0
             )
-            raw = response.choices[0].message.content
-            
-            # Smart Parsing
-            try:
-                st.session_state.option_a = raw.split("[OPTION_A]")[1].split("[OPTION_B]")[0].strip()
-                st.session_state.option_b = raw.split("[OPTION_B]")[1].strip()
-                st.success("Options Generated! Use the Sidebar to choose.")
-            except:
-                st.error("Parsing failed. Showing raw output:")
-                st.code(raw)
+            st.session_state.raw_response = response.choices[0].message.content
 
-# 3. Sidebar Control Center
-with st.sidebar:
-    st.header("🎛️ Command Center")
-    if st.session_state.option_a:
-        if st.button("👈 Show Option A & Train"):
-            st.session_state.displayed_content = st.session_state.option_a
-            st.session_state.golden_examples.append(st.session_state.option_a)
-            st.toast("Trained on A!")
-            
-        if st.button("👉 Show Option B & Train"):
-            st.session_state.displayed_content = st.session_state.option_b
-            st.session_state.golden_examples.append(st.session_state.option_b)
-            st.toast("Trained on B!")
-    else:
-        st.info("Generate options to see controls.")
+# 2. Display & Selection
+if "raw_response" in st.session_state:
+    raw = st.session_state.raw_response
+    
+    # تقسيم الرد لـ 4 خيارات
+    options = {"A": "", "B": "", "C": "", "D": ""}
+    for opt in ["A", "B", "C", "D"]:
+        try:
+            # تقطيع بناءً على التاجز
+            part = raw.split(f"[OPTION_{opt}]")[1].split("[OPTION_")[0]
+            options[opt] = part.strip()
+        except:
+            options[opt] = "Error generating this option."
 
-# 4. Display Area
-if st.session_state.displayed_content:
-    st.subheader("Selected Result")
-    st.code(st.session_state.displayed_content, language=None)
+    # عرض الخيارات تحت بعض
+    for opt, content in options.items():
+        st.subheader(f"Option {opt}")
+        st.code(content, language=None)
+        
+        # الزرار تحت كل خيار
+        if st.button(f"✅ Vote & Select Option {opt}"):
+            st.session_state.selected_result = content
+            st.session_state.golden_examples.append(content)
+            st.success(f"Option {opt} selected and saved to training data!")
+            st.rerun()
+
+# 3. Final Selected Area
+if st.session_state.selected_result:
+    st.divider()
+    st.subheader("Final Selected Report")
+    st.code(st.session_state.selected_result, language=None)
