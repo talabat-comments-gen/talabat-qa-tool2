@@ -36,7 +36,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🚀 Talabat Surgical Pro Dashboard")
+st.title("🚀 Talabat comment tool")
 
 # 2. API setup
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
@@ -44,7 +44,7 @@ client = Groq(api_key=api_key)
 
 chat_input = st.text_area("Paste chat transcript here:", height=200)
 
-if st.button("Extract Data (200% Accuracy)"):
+if st.button("Extract Data (Generate)"):
     if chat_input:
         with st.spinner('Translating & Analyzing...'):
             try:
