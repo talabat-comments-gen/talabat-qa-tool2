@@ -3,8 +3,9 @@ import os
 import time
 from groq import Groq
 
-# 1. Config & UI
-st.set_page_config(page_title="Talabat Surgical Pro v6", layout="centered")
+# 1. Page Config
+st.set_page_config(page_title="Talabat Surgical Pro v7", layout="centered")
+
 st.markdown("""
     <style>
     :root { --primary-color: #FF8500; }
@@ -13,9 +14,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🚀 Talabat Surgical Pro v6")
+st.title("🚀 Talabat Surgical Pro v7 (Robust)")
 
-# 2. Abbreviations Glossary
+# 2. Abbreviations
 abbreviations = {
     "CST": "Customer", "RST": "Restaurant", "RNA": "Restaurant/Rider Not Answering",
     "FU": "Follow Up", "OTW": "On The Way", "NAT": "No action taken",
@@ -24,7 +25,7 @@ abbreviations = {
     "CNA": "Customer Not Answering", "PR": "Partial Refund", "FR": "Full Refund"
 }
 
-with st.expander("📚 Abbreviations Glossary (Use these in output)"):
+with st.expander("📚 Abbreviations Glossary"):
     st.table(list(abbreviations.items()))
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
@@ -32,15 +33,9 @@ client = Groq(api_key=api_key)
 
 chat_input = st.text_area("Paste chat transcript here:", height=200)
 
-if st.button("Extract Data (Perfect Formatting)"):
+if st.button("Extract Data (Robust Parsing)"):
     if chat_input:
-        with st.spinner('Linguistic Analysis...'):
-            # 5-second countdown
-            progress_bar = st.progress(0)
-            for i in range(5):
-                time.sleep(1)
-                progress_bar.progress((i + 1) * 20)
-            
+        with st.spinner('Linguistic Analysis & Extraction...'):
             try:
                 system_prompt = """
                 You are a Senior Data Extraction Expert for Talabat.
@@ -50,13 +45,15 @@ if st.button("Extract Data (Perfect Formatting)"):
                 2. Extract data into lines with this EXACT format: 
                    [Issue] // [Details] // [Action] // [Order ID]
                 
+                STRICT FORMATTING:
+                You MUST include '[SUMMARY]:' before your summary and '[DATA]:' before your lines.
+                If you do not use these tags, the tool will fail.
+                
                 STRICT RULES:
-                - Use the provided abbreviations (CST, RST, RNA, NAT, etc.) in the output.
-                - Linguistic Accuracy: If the customer provides clarification, capture it clearly. If they complain, capture the issue.
-                - DO NOT classify intents as headers. Just output the lines.
-                - System Logic: If the agent is restricted, use 'no action taken' (or NAT).
-                - NO ARABIC. English only.
-                - Precision: 200%. Do not summarize the [Details] too much; keep the customer's specific explanation.
+                - Use abbreviations: CST, RST, RNA, NAT, etc.
+                - NO ARABIC in output.
+                - Precision: 200%. Capture the customer's specific explanation details perfectly.
+                - Agent restricted? Use 'NAT' or 'no action taken'.
                 """
 
                 chat_completion = client.chat.completions.create(
@@ -70,18 +67,22 @@ if st.button("Extract Data (Perfect Formatting)"):
                 
                 raw_output = chat_completion.choices[0].message.content
                 
-                # Logic to split summary and data
-                summary = "Summary not generated."
+                # Robust Parsing Logic
+                summary = "Summary not found in output."
                 data_points = []
                 
-                if "[SUMMARY]:" in raw_output:
+                if "[SUMMARY]:" in raw_output and "[DATA]:" in raw_output:
+                    # Case 1: Perfect format
                     parts = raw_output.split("[SUMMARY]:")[1].split("[DATA]:")
                     summary = parts[0].strip()
-                    if len(parts) > 1:
-                        data_raw = parts[1].strip()
-                        data_points = [line.strip() for line in data_raw.split('\n') if line.strip()]
+                    data_raw = parts[1].strip()
+                    data_points = [line.strip() for line in data_raw.split('\n') if line.strip()]
+                else:
+                    # Case 2: Fallback (Try to find lines anyway)
+                    summary = "Format error: Tags missing. Raw output displayed below."
+                    data_points = [line.strip() for line in raw_output.split('\n') if "//" in line]
 
-                # Display Results
+                # UI
                 st.subheader("Sharp Summary")
                 st.info(summary)
                 
@@ -90,6 +91,6 @@ if st.button("Extract Data (Perfect Formatting)"):
                 
                 for point in data_points:
                     st.code(point, language=None)
-            
+                    
             except Exception as e:
                 st.error(f"Error: {e}")
