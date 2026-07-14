@@ -1,20 +1,22 @@
 import streamlit as st
+import os
 from groq import Groq
 
 st.set_page_config(page_title="Talabat QA Engine", layout="centered")
 st.title("🚀 Talabat QA Analysis Engine")
 
-# التعديل هنا: محاولة القراءة بطريقة أكثر مرونة
-api_key = st.secrets.get("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")
+# محاولة القراءة بأكتر من طريقة لضمان النجاح
+api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 
 if not api_key:
-    st.error("Error: GROQ_API_KEY is not found. Please check your Secrets configuration again.")
+    st.error("❌ API Key not found. Let's force it.")
+    st.write(f"System Check: Keys detected in secrets: {list(st.secrets.keys())}")
     st.stop()
 
 try:
     client = Groq(api_key=api_key)
 except Exception as e:
-    st.error(f"Initialization Error: {e}")
+    st.error(f"Groq Config Error: {e}")
     st.stop()
 
 # Text area
