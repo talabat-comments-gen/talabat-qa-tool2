@@ -2,8 +2,8 @@ import streamlit as st
 import os
 from groq import Groq
 
-st.set_page_config(page_title="Talabat Multi-Point Logger", layout="centered")
-st.title("🚀 Talabat Multi-Point Logger")
+st.set_page_config(page_title="Talabat Raw Log", layout="centered")
+st.title("🚀 Talabat Raw Log (English Only)")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 if not api_key:
@@ -14,24 +14,22 @@ client = Groq(api_key=api_key)
 
 chat_input = st.text_area("Paste chat transcript here:", height=200)
 
-if st.button("Generate Log"):
+if st.button("Generate"):
     if chat_input:
-        with st.spinner('Analyzing all points...'):
+        with st.spinner('Analyzing...'):
             try:
                 system_prompt = """
                 You are a data extraction engine.
                 - Analyze the chat transcript completely.
-                - Identify ALL distinct issues, complaints, or comments.
-                - Sort them by priority/importance (Most critical issue first).
-                - For EACH issue, output a separate line in this format:
+                - Identify EACH complaint or distinct issue.
+                - For EACH issue, output a separate line in this exact format:
                 [Issue] // [Details] // [Action] // [Order ID]
-                
+
                 STRICT RULES:
-                1. STRICTLY ENGLISH ONLY. NO ARABIC CHARACTERS ALLOWED.
-                2. [Order ID]: ONLY NUMERIC DIGITS. If it contains letters/dashes/symbols (like Ticket IDs), write N/A.
-                3. [Details]: English summary + short quote from the chat (translated to English).
-                4. [Action]: Summary of agent's action in English.
-                5. NO headers, NO greetings, NO filler, NO 'Denied' labels. JUST the data lines.
+                1. STRICTLY ENGLISH ONLY. NO ARABIC CHARACTERS ALLOWED in the result. Translate any Arabic input to English.
+                2. [Order ID]: ONLY NUMERIC DIGITS. If it contains letters/dashes/symbols (like Ticket IDs), write 'N/A'.
+                3. NO intros, NO titles, NO headers, NO filler. Output ONLY the data lines.
+                4. Sort by importance (Most critical issue first).
                 """
 
                 chat_completion = client.chat.completions.create(
@@ -43,7 +41,8 @@ if st.button("Generate Log"):
                     temperature=0.0
                 )
                 
-                st.text_area("Data Lines:", value=chat_completion.choices[0].message.content, height=150)
+                # إظهار النتيجة
+                st.code(chat_completion.choices[0].message.content, language=None)
                 
             except Exception as e:
                 st.error(f"Error: {e}")
