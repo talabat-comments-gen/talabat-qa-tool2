@@ -4,7 +4,7 @@ from groq import Groq
 
 # 1. Page Config
 st.set_page_config(page_title="Talabat Final Engine", layout="centered")
-st.title("🚀 Talabat Data Logger (v3)")
+st.title("🚀 Talabat Data Logger (Final)")
 
 # 2. API Key setup
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
@@ -32,10 +32,10 @@ if st.button("Generate Final Log"):
                 [CST Request] // [Detailed Issue] // [Agent Action] // [Resolution] // [Order ID] // [CST Name]
 
                 Rules:
-                1. [Detailed Issue]: Explain the problem in detail (e.g., "Ordered 8 Shawerma, only received 4").
-                2. [Agent Action]: Use short, fixed phrases only. DO NOT explain. Examples: 'can't take any action', 'checked order', 'processed refund', 'escalated to team'.
-                3. [Resolution]: One or two words only. Examples: 'Denied', 'Resolved', 'Pending'.
-                4. [Order ID]: Extract ONLY the numerical order ID. If not found, write 'N/A'.
+                1. [Detailed Issue]: Short, clear explanation of the problem.
+                2. [Agent Action]: Use short, fixed phrases (e.g., 'can't take any action', 'checked order', 'processed refund').
+                3. [Resolution]: One or two words only (e.g., 'Denied', 'Resolved').
+                4. [Order ID]: Extract ONLY the long numerical Order ID (e.g., 3755212903). If it contains letters (like a Chat Ticket ID), IGNORE IT and write 'N/A'.
                 5. [CST Name]: Extract the customer name.
                 6. STRICT: NO greetings, NO apologies, NO filler. Use '//' as separator.
                 """
