@@ -14,54 +14,12 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # 2. Comprehensive Drive Map
-DRIVE_MAP = {
-    "Check order status": "Checking current order progress, location, or ETA.",
-    "Complain about short delay (0-10 mins)": "Delivery time exceeded by 0-10 mins.",
-    "Complaint about moderate delay (11-20 mins)": "Delivery time exceeded by 11-20 mins.",
-    "Complaint about severe delay (21-30 mins)": "Delivery time exceeded by 21-30 mins.",
-    "Complaint about extreme delay (+30 mins)": "Delivery time exceeded by +30 mins.",
-    "Order marked as delivered but didn't receive (TGO)": "System shows delivered but customer claims non-receipt.",
-    "Restaurant hasn't started preparing the food (TGO)": "Restaurant latency issues.",
-    "Didn't receive order confirmation": "Technical issue or delay in receiving order confirmation.",
-    "Order tracking issue TMP & TGO": "Issue with real-time tracking visibility.",
-    "Order will not be processed (Cancellation)": "Order cancelled due to various reasons.",
-    "Cancellation reason inquiry": "Customer asking why an order was cancelled.",
-    "Order not assigned to rider": "Logistics issue, rider not found/assigned.",
-    "Need help locating partner for pickup": "Pickup issue, location/contact clarification.",
-    "Item unavailable for pickup": "Partner issue, item stock out.",
-    "Address / Delivery instructions": "Address correction or delivery instructions not followed.",
-    "Food items / Cooking instructions": "Issues with food preparation or ingredients.",
-    "Payment method / Voucher / Contact Details": "Inquiries on payments, voucher applications, or profile updates.",
-    "Change expedition type / pick-up time / outlet": "Request to modify pickup or delivery parameters.",
-    "Request: order is late / longer than expected": "Request for delay updates.",
-    "Request: changed mind / accidental / duplicated": "Order cancellation/modification requests.",
-    "Complaint: Partner/logistics cancellation": "Partner closed or cancelled due to issues.",
-    "Missing item / Wrong item / Wrong order / Spilled food": "Quality or accuracy complaints.",
-    "Food quality / Temperature / Poisoning / Allergens": "Food safety and quality issues.",
-    "Foreign Object": "Safety escalation (Foreign object in food).",
-    "Inappropriate behavior": "Conduct complaint against rider/partner.",
-    "Money collection issue": "Cash collection or instruction follow-through.",
-    "Invoice missing / Incorrect details": "Missing or incorrect invoice details.",
-    "Refund query / Wallet refund / Double Charge": "Financial escalations, double charges, or refund requests.",
-    "Website / App / Online / Offline payment issues": "Technical platform issues.",
-    "Account deletion / Data protection": "Account management and data privacy inquiries.",
-    "Subscription / Premium / Loyalty program": "Account management and program inquiries.",
-    "Follow up on existing case": "Status check on raised complaints/refunds/escalations.",
-    "Contactless delivery feature inquiry": "Rules/procedures for contactless delivery.",
-    "Payment method inquiry": "Changing payment methods or refund reversals.",
-    "Partner related inquiry": "Vendor availability, menu, hours, halal status, or contact requests.",
-    "Rider related inquiry": "Tipping, rating, or contacting rider.",
-    "Delivery area/fee inquiry": "Delivery area coverage or fee/COD/Express fee disputes.",
-    "Promotions / deals / E-Gift Card": "Subscription, newsletter, or E-Gift card inquiries.",
-    "Non-live order inquiry": "General queries (pre-order, utensils, etc.) without an active order.",
-    "Work with us": "Partnership or employment inquiries.",
-    "Logistics as a service inquiry": "Partner logistics service requests.",
-    "Positive": "Positive feedback or review resolution.",
-    "Negative": "Negative feedback or compensation dissatisfaction.",
-    "Spam / Irrelevant": "Silent chats or irrelevant inquiries.",
-    "Menu price discrepancy": "Price markup complaints (Pre-order).",
-    "Mistake on menu": "Frontend/Application menu errors."
-}
+DRIVE_MAP = [
+    "Complaint about short delay (0-10 mins)", "Complaint about moderate delay (11-20 mins)",
+    "Complaint about severe delay (21-30 mins)", "Complaint about extreme delay (+30 mins)",
+    "Follow up on existing case", "Check order status", "Refunds/Wallet/Double Charge",
+    "Partner related inquiry", "Positive", "Negative"
+]
 
 # 3. State
 if "summary" not in st.session_state: st.session_state.summary = ""
@@ -75,26 +33,34 @@ api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
 # 5. UI Input
-chat_input = st.text_area("Paste Transcript:", height=150)
-selected_drive = st.selectbox("Select Contact Drive (Context):", options=list(DRIVE_MAP.keys()))
+chat_input = st.text_area("Paste Transcript or Context:", height=150)
+selected_drive = st.selectbox("Select Contact Drive:", options=DRIVE_MAP)
 
-if st.button("🚀 Generate Professional Log"):
+if st.button("🚀 Generate Log (Strict Format)"):
     if chat_input:
-        with st.spinner('Analyzing stance and crafting log...'):
-            context_desc = DRIVE_MAP[selected_drive]
+        with st.spinner('Generating log...'):
             
+            # الـ Prompt ده بيجبر الـ AI يتبع الـ Template اللي بعتهولي بالظبط
             prompt = f"""
-            You are a Senior Talabat Agent. Analyze the transcript based on:
+            You are a Senior Talabat Agent. Analyze the transcript/summary and generate a log.
+            
             CONTACT DRIVE: {selected_drive}
-            CONTEXT: {context_desc}
             
-            Instructions:
-            - Write a professional, human-readable SUMMARY of the interaction.
-            - Write a detailed, technical COMMENT (Log) focusing on the Resolution and Action Taken.
-            - DO NOT use templates or rigid syntax. Write natural, high-quality professional English.
-            - Focus on: What was the issue? What did we do? What is the outcome?
+            INSTRUCTIONS:
+            1. Write a professional SUMMARY in the [SUMMARY] section.
+            2. Write a technical COMMENT in the [COMMENT] section.
             
-            Output format (Strictly use these tags):
+            COMMENT FORMAT (STRICT):
+            {selected_drive} // asper last comment ((OT // green // asper last comment //////// "[Detailed CST message/reason]", "+++comment [Action taken by agent]", //////// [Next steps/Action] )) // [Outcome/Satisfaction] // [Next Steps] // [Info Channel]
+            
+            RULES:
+            - DO NOT change the slashes (//) or the nested parentheses (( )) format.
+            - Keep the "asper last comment" text exactly as requested.
+            - Ensure the content within brackets/quotes reflects the provided transcript/summary.
+            - No Arabic.
+            - Use abbreviations (CST, RST, RNA, OT, TGO, TMP).
+            
+            Output format:
             [SUMMARY]
             ...
             [COMMENT]
@@ -104,7 +70,7 @@ if st.button("🚀 Generate Professional Log"):
             try:
                 response = client.chat.completions.create(
                     messages=[{"role": "system", "content": prompt}, {"role": "user", "content": f"Transcript: {chat_input}"}],
-                    model="llama-3.1-8b-instant", temperature=0.5
+                    model="llama-3.1-8b-instant", temperature=0.2 # Temperature منخفض لضمان الالتزام بالـ Format
                 )
                 raw_text = response.choices[0].message.content
                 
@@ -120,9 +86,9 @@ if st.button("🚀 Generate Professional Log"):
 
 # 6. Display Result
 if st.session_state.summary:
-    tab1, tab2 = st.tabs(["📋 Summary", "📝 Resolution Log (Comment)"])
+    tab1, tab2 = st.tabs(["📋 Summary", "📝 Strict Comment Log"])
     with tab1: st.write(st.session_state.summary)
-    with tab2: st.write(st.session_state.comment)
+    with tab2: st.code(st.session_state.comment, language=None) # Code block عشان يفضل الـ format واضح
         
     if st.button("🔄 Reset"):
         st.session_state.summary = ""
