@@ -20,24 +20,48 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Detailed Contact Drives Logic
+# 2. Comprehensive Drive Map (Full List)
 DRIVE_MAP = {
-    "Follow up on existing case": "Customer is checking on a raised case (Complaints/Refund/tRewards/tPro/Escalation). Handle incomplete orders, double deduction, or payment issues. Address if promised compensation was not applied.",
-    "Contactless delivery feature inquiry": "Customer is asking about the contactless rules and procedures that Talabat follows.",
-    "Payment method inquiry": "Inquiry on changing/deleting payment methods, adding/removing credit cards, or how to pay via specific methods. Also covers requests to revert refunds to bank.",
-    "Partner related inquiry": "Inquiries about vendor availability, menu selection, operational hours, Halal confirmation, or how to contact the restaurant.",
-    "Rider related inquiry": "Inquiries on tipping, rating the rider, or contacting the rider.",
-    "Delivery area/fee inquiry": "Inquiries about delivery coverage, high delivery fees, or issues regarding Cash on Delivery (COD) / Express Delivery fees.",
-    "Promotions and deals inquiry": "Details on subscription programs, newsletter signup, or E-Gift cards.",
-    "Non-live order inquiry": "General inquiries not related to a live order (e.g., pre-ordering, utensils, general ordering process).",
-    "Loyalty program inquiry": "Inquiry regarding subscription or loyalty programs.",
-    "Work with us": "Inquiries regarding employment or partnership with Talabat.",
-    "Logistics as a service inquiry": "Inquiries from partners who want to use Talabat's logistics services.",
-    "Positive": "Positive feedback for Talabat or the restaurant. Handle rating/review issues (Positive).",
-    "Negative": "Negative feedback or dissatisfaction with compensation amount. Handle rating/review issues (Negative).",
-    "Spam / Irrelevant": "Silent chats or general inquiries unrelated to Talabat.",
-    "Menu price discrepancy": "Complaint about price markup issue (Pre-order).",
-    "Mistake on menu": "Errors on frontend/application (Pre-order)."
+    "Check order status": "Checking current order progress, location, or ETA.",
+    "Complain about late order - tMP & tGO": "Delayed order in TMP or TGO delivery. Needs investigation.",
+    "ETA is stuck or increasing (TGO)": "TGO delivery ETA is not updating or increasing.",
+    "Order marked as delivered but didn't receive (TGO)": "System shows delivered but customer claims non-receipt.",
+    "Restaurant hasn't started preparing the food (TGO)": "Restaurant latency issues.",
+    "Didn't receive order confirmation": "Technical issue or delay in receiving order confirmation.",
+    "Order tracking issue TMP & TGO": "Issue with real-time tracking visibility.",
+    "Order will not be processed (Cancellation)": "Order cancelled due to various reasons.",
+    "Cancellation reason inquiry": "Customer asking why an order was cancelled.",
+    "Order not assigned to rider": "Logistics issue, rider not found/assigned.",
+    "Need help locating partner for pickup": "Pickup issue, location/contact clarification.",
+    "Item unavailable for pickup": "Partner issue, item stock out.",
+    "Complaint about short/moderate/severe/extreme delay": "Addressing specific delay durations and corresponding compensation/action.",
+    "Address/Delivery issues": "Address correction, delivery instructions not followed.",
+    "Food items/Cooking instructions": "Issues with food preparation or ingredients.",
+    "Payment method/Voucher/Contact Details": "Inquiries on payments, voucher applications, or profile updates.",
+    "Change expedition type/time/outlet": "Request to modify pickup or delivery parameters.",
+    "Missing/Wrong item/Order/Spilled food": "Quality or accuracy complaints (Missing, Wrong, Spilled).",
+    "Food quality/Temperature/Poisoning/Allergens": "Food safety and quality issues.",
+    "Foreign Object": "Safety escalation (Foreign object in food).",
+    "Inappropriate behavior": "Conduct complaint against rider/partner.",
+    "Money collection/Delivery instructions": "Cash collection or instruction follow-through.",
+    "Invoice issues": "Missing or incorrect invoice details.",
+    "Refunds/Wallet/Double Charge": "Financial escalations, double charges, or refund requests.",
+    "Website/App/Online payment issues": "Technical platform issues.",
+    "Account/Subscription/Loyalty/Premium/Rewards": "Account management and program inquiries.",
+    "Follow up on existing case": "Status check on raised complaints/refunds/escalations.",
+    "Contactless delivery feature inquiry": "Rules/procedures for contactless delivery.",
+    "Partner related inquiry": "Vendor availability, menu, hours, halal status, or contact requests.",
+    "Rider related inquiry": "Tipping, rating, or contacting rider.",
+    "Delivery area/fee inquiry": "Delivery area coverage or fee/COD/Express fee disputes.",
+    "Promotions/deals/Gift Card": "Subscription, newsletter, or E-Gift card inquiries.",
+    "Non-live order inquiry": "General queries (pre-order, utensils, etc.) without an active order.",
+    "Work with us": "Partnership or employment inquiries.",
+    "Logistics as a service inquiry": "Partner logistics service requests.",
+    "Positive": "Positive feedback or review resolution.",
+    "Negative": "Negative feedback or compensation dissatisfaction.",
+    "Spam / Irrelevant": "Silent or non-relevant chats.",
+    "Menu price discrepancy": "Price markup complaints (Pre-order).",
+    "Mistake on menu": "Frontend/Application menu errors."
 }
 
 # 3. State Management
@@ -45,7 +69,7 @@ if "generated_comment" not in st.session_state: st.session_state.generated_comme
 
 # 4. Header
 st.title("🍔 Talabat Log Generator")
-st.markdown("### Professional Resolution & Action Logging")
+st.markdown("### Full Resolution & Action Log")
 st.markdown("---")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
@@ -58,20 +82,18 @@ selected_drive = st.selectbox("Select Contact Drive (Context dictates stance):",
 if st.button("🚀 Generate Final Resolution Log"):
     if chat_input:
         with st.spinner('Analyzing stance and crafting log...'):
-            
-            # بنبعت للـ AI الاسم + التعريف بتاعه
             selected_desc = DRIVE_MAP[selected_drive]
             
             prompt = f"""
-            You are a Senior Talabat Agent. Your goal is to write ONE comprehensive, professional, and detailed log comment based on the chat transcript.
+            You are a Senior Talabat Agent. Write ONE comprehensive, professional, technical log comment.
             
             CONTACT DRIVE: {selected_drive}
-            CONTEXT/DEFINITION: {selected_desc}
+            CONTEXT: {selected_desc}
             
             CORE INSTRUCTION:
-            - Analyze the transcript through the lens of the provided definition.
+            - Analyze the transcript using the provided Context.
             - Focus HEAVILY on Resolution and Action Taken.
-            - The comment must be technical, dense, and professional.
+            - Ensure the tone is technical, objective, and dense.
             
             Format strictly in this dense format:
             [Issue Category] // [Status/Logic Details] (( [Sub-logic details: Resolution and Actions taken] )) // [Outcome] // [Next Steps] // [Info Channel]
@@ -80,7 +102,7 @@ if st.button("🚀 Generate Final Resolution Log"):
             - NO Order ID.
             - NO Arabic.
             - Use abbreviations (CST, RST, RNA, OT, TGO, TMP).
-            - The output must be ONE long, dense paragraph of technical details.
+            - The output must be ONE long, dense paragraph.
             """
             
             try:
