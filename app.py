@@ -2,36 +2,36 @@ import streamlit as st
 import os
 from groq import Groq
 
-st.set_page_config(page_title="Talabat Final Engine", layout="centered")
-st.title("🚀 Talabat Multi-Bar Engine")
+# 1. Config
+st.set_page_config(page_title="Talabat 200% Precision", layout="centered")
+st.title("🚀 Talabat Extraction (Precision 200%)")
 
-# إعداد الـ API
+# 2. API setup
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
-if not api_key:
-    st.error("❌ API Key not found.")
-    st.stop()
-
 client = Groq(api_key=api_key)
 
-chat_input = st.text_area("Paste chat transcript here:", height=200)
+chat_input = st.text_area("Paste chat transcript here (Arabic/English):", height=250)
 
-if st.button("Generate & Extract"):
+if st.button("Extract Data (Literal & Accurate)"):
     if chat_input:
-        with st.spinner('Analyzing & Translating...'):
+        with st.spinner('Translating & Extracting...'):
             try:
+                # الـ Prompt الجديد بتركيز على الترجمة الحرفية والصرامة
                 system_prompt = """
-                You are a professional data extraction and translation engine.
-                1. Read the entire chat transcript.
-                2. Extract all distinct issues.
-                3. Translate all content from Arabic to English ACCURATELY and LITERALLY. Do not summarize or change meaning.
-                4. Output each issue as a SEPARATE line.
-                5. Format: [Issue] // [Details] // [Action] // [Order ID]
+                You are a Literal Translation and Data Extraction Engine. 
+                
+                YOUR MISSION:
+                1. Read the provided chat transcript.
+                2. Extract all distinct issues/complaints.
+                3. Translate EVERYTHING from Arabic to English LITERALLY. Do not summarize. Do not change tone. Maintain the exact meaning of every word.
+                4. Output format: [Issue] // [Details] // [Action] // [Order ID]
                 
                 STRICT RULES:
-                - STRICTLY ENGLISH ONLY. NO ARABIC CHARACTERS ALLOWED IN OUTPUT.
-                - If the Order ID contains letters, dashes, or special characters, write 'N/A'.
+                - STRICTLY ENGLISH ONLY. NO ARABIC CHARACTERS IN OUTPUT.
+                - Order ID: MUST be purely numeric (digits only). If the chat mentions a 'Ticket ID' or includes letters/dashes/symbols, IGNORE IT and write 'N/A'.
                 - Sort by importance.
-                - NO headers, NO titles, NO conversation. Just the formatted strings.
+                - NO intros, NO filler, NO headers, NO explanations.
+                - Each issue MUST be on a separate line.
                 """
 
                 chat_completion = client.chat.completions.create(
@@ -43,15 +43,12 @@ if st.button("Generate & Extract"):
                     temperature=0.0
                 )
                 
-                # معالجة النتائج وعرضها
                 raw_output = chat_completion.choices[0].message.content
                 lines = [line.strip() for line in raw_output.split('\n') if line.strip()]
                 
-                for index, line in enumerate(lines):
-                    # استخدام st.code عشان يظهر زر الـ Copy تلقائياً
+                # عرض النتائج في بارات مع زر الـ Copy
+                for line in lines:
                     st.code(line, language=None)
                 
             except Exception as e:
                 st.error(f"Error: {e}")
-    else:
-        st.warning("Please paste the chat transcript first.")
