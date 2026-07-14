@@ -3,7 +3,7 @@ import os
 from groq import Groq
 
 st.set_page_config(page_title="Talabat Log Engine", layout="centered")
-st.title("🚀 Talabat Log Engine")
+st.title("🚀 Talabat Log Engine (Simple)")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 
@@ -21,21 +21,20 @@ chat_input = st.text_area("Paste Chat Transcript Here:", height=400)
 
 if st.button("Generate Log"):
     if chat_input:
-        with st.spinner('Extracting facts...'):
+        with st.spinner('Simplifying...'):
             try:
-                # الـ Prompt ده هيمنعه يكتب كلمة واحدة زيادة عن اللي حصل
+                # ده الـ Prompt الجديد: بسيط، مباشر، بدون أي تأليف
                 system_prompt = """
-                You are a Transcription Machine. 
-                DO NOT summarize. DO NOT infer procedures. DO NOT add steps that did not happen in the chat.
-                Extract facts ONLY. 
-                Output format must be exactly:
-                CST: [Customer Issue as written in chat] // Agent: [My specific response/action as written in chat] // Status: [Current final state]
+                You are a simple note-taker. 
+                Write the log using simple, broken-down English.
+                DO NOT add any status codes like 'DELIVERED'.
+                DO NOT use formal words like 'escalated'.
+                Use this format:
+                CST: [Issue in few words] // Agent: [What I did in few words]
                 
                 Rules:
-                1. If I did not take an action, write 'NAT'.
-                2. Use the provided abbreviations.
-                3. If the info is missing, write 'N/A'.
-                4. No polite phrases, no introductions, no explanations.
+                1. If I did nothing, write 'NAT'.
+                2. No extra explanations. Just the facts.
                 """
 
                 chat_completion = client.chat.completions.create(
