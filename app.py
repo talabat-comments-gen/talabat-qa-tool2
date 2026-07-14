@@ -3,16 +3,12 @@ import os
 import re
 from groq import Groq
 
-# 1. Config & UI Styling
+# 1. Config & Styling
 st.set_page_config(page_title="Talabat Comment Generator", layout="centered", page_icon="🍔")
 
-# Injecting Talabat Styling (Responsive to Theme)
 st.markdown("""
     <style>
-    :root {
-        --talabat-orange: #FF7800;
-    }
-    /* Talabat Style Buttons - Works in both Light/Dark */
+    :root { --talabat-orange: #FF7800; }
     .stButton>button {
         background-color: var(--talabat-orange) !important;
         color: white !important;
@@ -21,49 +17,87 @@ st.markdown("""
         font-weight: 700 !important;
         transition: 0.3s !important;
     }
-    .stButton>button:hover {
-        background-color: #e66c00 !important;
-        transform: scale(1.02);
-    }
-    /* Fixing the background color issue by removing the forced white */
-    .stApp {
-        /* No hardcoded white background anymore */
-    }
+    .stButton>button:hover { background-color: #e66c00 !important; transform: scale(1.02); }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. State Management
+# 2. Options List
+CONTACT_DRIVES = [
+    "Check order status", "Complain about late order - tMP & tGO", "ETA is stuck or increasing (TGO)",
+    "Order marked as delivered but didn't receive (TGO)", "Restaurant hasn't started preparing the food (TGO)",
+    "Didn't receive order confirmation", "Order tracking issue TMP & TGO", "Order will not be processed (Cancellation)",
+    "Cancellation reason inquiry", "Order not assigned to rider", "Need help locating partner for pickup",
+    "Item unavailable for pickup", "Complaint about short delay", "Complaint about moderate delay",
+    "Complaint about severe delay", "Complaint about extreme delay", "Address", "Food items", "Delivery instructions",
+    "Delivery time/date", "Cooking instructions", "Payment method", "Voucher", "Contact Details",
+    "Change expedition type", "Change pick-up time", "Change pick-up outlet", "Request: order will take longer than expected",
+    "Request: voucher not applied", "Request: order modification not possible", "Request: order is late",
+    "Request: changed mind", "Request: accidental order", "Request: duplicated order",
+    "Complaint: Partner cancellation", "Complaint: logistics cancellation", "Request: Partner closed for pickup",
+    "Request: Unable to locate pickup partner", "Request: out of stock item(s)", "Missing item",
+    "Wrong item", "Issue with item replacement process", "Wrong order", "Order never arrived", "Spilled food",
+    "Food quality", "Cooking instructions were not followed", "Food portion", "Food temperature",
+    "Food poisoning", "Food allergens - complain", "Foreign Object", "Short delay - TGO", "Inappropriate behavior",
+    "Missing equipment/uniform", "Order not delivered to doorstep", "Money collection issue",
+    "Delivery instructions not followed", "Invoice missing", "Incorrect invoice", "Incorrect invoice details",
+    "Refund query", "Refund request", "Wallet refund query", "Double Charge", "Rider Tips refund issue",
+    "Expired item", "Damaged item", "Near expiry date", "Product Quantity", "Other issues related to Contactless delivery",
+    "Website issue", "App issue", "Online payment issue", "Offline payment issue", "Wallet issue",
+    "Voucher validity", "Voucher conditions", "Voucher already used", "Cannot apply", "Not satisfied with value",
+    "Voucher request", "Voucher not received", "Other voucher inquiry", "Promotion/discount not applied",
+    "Newsletter un-subscription", "Account deletion", "Data protection inquiry", "Change account details",
+    "SMS Verification issue", "Subscription / Premium service issue", "Loyalty program issue",
+    "Dine-in deals issue", "Reward program issue", "Follow up on existing case", "Contactless delivery feature inquiry",
+    "Payment method inquiry", "Partner related inquiry", "Rider related inquiry", "Delivery area/fee inquiry",
+    "Promotions and deals inquiry", "Non-live order inquiry", "Loyalty program inquiry", "Work with us",
+    "Logistics as a service inquiry", "Positive", "Negative", "Spam / Irrelevant",
+    "Menu price discrepancy", "Mistake on menu"
+]
+
+# 3. State Management
 if "golden_examples" not in st.session_state: st.session_state.golden_examples = []
 if "voted" not in st.session_state: st.session_state.voted = False
 if "raw_response" not in st.session_state: st.session_state.raw_response = None
 if "selected_result" not in st.session_state: st.session_state.selected_result = ""
 
-# 3. Header
+# 4. Header
 st.title("🍔 Talabat Comment Generator")
 st.markdown("---")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
-# 4. Input Section
+# 5. Input Section
 chat_input = st.text_area("Paste Chat Transcript:", height=150, placeholder="Paste conversation here...")
-contact_drive = st.text_input("Contact Drive:", placeholder="e.g., Cooking Instruction")
+# هنا التغيير: استخدمت selectbox بدل text_input
+selected_drive = st.selectbox("Select Contact Drive:", options=CONTACT_DRIVES, index=0)
 
 if st.button("Generate Variations"):
     if chat_input:
         st.session_state.voted = False
         with st.spinner('Thinking in Talabat style...'):
             memory_str = "\n".join(st.session_state.golden_examples)
+            
+            # الـ Prompt دلوقتي بيستخدم الـ selected_drive اللي اخترته من القائمة
             prompt = f"""
             You are a Senior Talabat Agent. Generate FOUR distinct variations (A, B, C, D).
             Memory: {memory_str}
-            CONTACT DRIVE: {contact_drive if contact_drive else "General Inquiry"}
-            CORE INSTRUCTION: The CONTACT DRIVE is the backbone of the case.
+            CONTACT DRIVE: {selected_drive}
+            
+            CORE INSTRUCTION: 
+            The CONTACT DRIVE is the core backbone of the case. 
+            All reports must classify the issue based on the selected Contact Drive: '{selected_drive}'.
+            
             Format tags: [OPTION_A], [OPTION_B], [OPTION_C], [OPTION_D].
             Inside each:
             [SUMMARY]: ...
             [DATA]: [Issue] // [Details] // [Action]
-            RULES: NO Order ID. NO UNCLEAR. NO ARABIC. Use abbreviations (CST, RST, RNA).
+            
+            RULES: 
+            - NO Order ID.
+            - NO UNCLEAR.
+            - NO ARABIC.
+            - Use abbreviations (CST, RST, RNA).
             """
             
             try:
@@ -75,7 +109,7 @@ if st.button("Generate Variations"):
             except Exception as e:
                 st.error(f"Error: {str(e)}")
 
-# 5. Parsing & Display
+# 6. Parsing & Display
 if st.session_state.raw_response:
     raw = st.session_state.raw_response
     parts = re.split(r'\[OPTION_[A-D]\]', raw)
