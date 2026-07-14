@@ -3,47 +3,38 @@ import os
 from groq import Groq
 
 # 1. Config
-st.set_page_config(page_title="Surgical Pro v20", layout="centered")
+st.set_page_config(page_title="Surgical Pro v22", layout="centered")
 
 # State Management
 if "golden_examples" not in st.session_state: st.session_state.golden_examples = []
 if "selected_result" not in st.session_state: st.session_state.selected_result = ""
 if "voted" not in st.session_state: st.session_state.voted = False
 
-st.title("🚀 Surgical Pro v20")
+st.title("🚀 Surgical Pro v22")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
-# Input Section
+# Input Section - Minimalist
 chat_input = st.text_area("Paste chat transcript:", height=150)
-
-# الخانات المطلوبة
-col1, col2 = st.columns(2)
-with col1:
-    contact_drive = st.text_input("Contact Drive (e.g., cooking instruction):", placeholder="e.g., cooking instruction")
-with col2:
-    custom_notes = st.text_input("Additional Notes:", placeholder="e.g., specific complaints...")
+contact_drive = st.text_input("Contact Drive:")
 
 if st.button("Generate 4 Variations"):
     if chat_input:
         st.session_state.voted = False
-        with st.spinner('Analyzing based on your Drive...'):
+        with st.spinner('Analyzing...'):
             memory_str = "\n".join(st.session_state.golden_examples)
             
-            # الـ Prompt الجديد: الـ Contact Drive هو الموجه الأساسي
+            # Prompt مُركز فقط على الـ Drive
             prompt = f"""
             You are a Senior Talabat Agent. Generate FOUR distinct variations (A, B, C, D).
             
-            Memory (Use this style): {memory_str}
+            Memory (Adopt this style): {memory_str}
+            CONTACT DRIVE: {contact_drive if contact_drive else "General Inquiry"}
             
             CORE INSTRUCTION: 
-            Use the CONTACT DRIVE below to categorize the issue. 
-            Ignore generic categories like 'Missing Item' if the drive suggests otherwise. 
-            Prioritize the 'Contact Drive' as the main [Issue].
-            
-            CONTACT DRIVE: {contact_drive if contact_drive else "General Inquiry"}
-            ADDITIONAL NOTES: {custom_notes if custom_notes else "None"}
+            Use the CONTACT DRIVE as the primary [Issue] classification. 
+            Ignore generic or standard categories if the Contact Drive suggests a specific focus.
             
             Format for each:
             [OPTION_X]
