@@ -3,20 +3,20 @@ import os
 from groq import Groq
 
 # 1. Config
-st.set_page_config(page_title="Surgical Pro v23", layout="centered")
+st.set_page_config(page_title="Surgical Pro v24", layout="centered")
 
 if "golden_examples" not in st.session_state: st.session_state.golden_examples = []
 if "selected_result" not in st.session_state: st.session_state.selected_result = ""
 if "voted" not in st.session_state: st.session_state.voted = False
 
-st.title("🚀 Surgical Pro v23")
+st.title("🚀 Surgical Pro v24")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
 # Input
 chat_input = st.text_area("Paste chat transcript:", height=150)
-contact_drive = st.text_input("Contact Drive:")
+contact_drive = st.text_input("Contact Drive (The core identity of this case):")
 
 if st.button("Generate 4 Variations"):
     if chat_input:
@@ -24,22 +24,25 @@ if st.button("Generate 4 Variations"):
         with st.spinner('Analyzing...'):
             memory_str = "\n".join(st.session_state.golden_examples)
             
+            # الـ Prompt الجديد: الـ Drive هو الأولوية القصوى وبدون Order ID
             prompt = f"""
             You are a Senior Talabat Agent. Generate FOUR distinct variations (A, B, C, D).
+            
             Memory: {memory_str}
             CONTACT DRIVE: {contact_drive if contact_drive else "General Inquiry"}
             
-            Format:
-            [OPTION_A]
+            CORE INSTRUCTION: 
+            The CONTACT DRIVE is the most important element of this report. 
+            Treat it as the core identity and backbone of the case. 
+            All analysis must revolve around this drive.
+            
+            Format for each:
+            [OPTION_X]
             [SUMMARY]: ...
-            [DATA]: [Issue] // [Details] // [Action] // [Order ID]
-            
-            [OPTION_B]
-            ...
-            
-            (Repeat for C and D)
+            [DATA]: [Issue] // [Details] // [Action]
             
             STRICT RULES:
+            - NO Order ID under any circumstances.
             - NO UNCLEAR section.
             - NO ARABIC.
             - Use abbreviations (CST, RST, RNA).
@@ -56,22 +59,19 @@ if "raw_response" in st.session_state:
     raw = st.session_state.raw_response
     options = {}
     
-    # محاولة ذكية للتقطيع بدون كراش
     found_any = False
     for opt in ["A", "B", "C", "D"]:
         tag = f"[OPTION_{opt}]"
         if tag in raw:
             try:
-                # قص الجزء الخاص بالخيار ده
                 part = raw.split(tag)[1]
-                # تنظيف من التاغ اللي بعده
                 for next_opt in ["A", "B", "C", "D"]:
                     if f"[OPTION_{next_opt}]" in part:
                         part = part.split(f"[OPTION_{next_opt}]")[0]
                 options[opt] = part.strip()
                 found_any = True
             except:
-                options[opt] = "Parsing error for this section."
+                options[opt] = None
         else:
             options[opt] = None
 
@@ -79,7 +79,6 @@ if "raw_response" in st.session_state:
         st.error("AI output format mismatch. Raw output:")
         st.code(raw)
     else:
-        # عرض النتائج
         if not st.session_state.voted:
             for opt, content in options.items():
                 if content:
