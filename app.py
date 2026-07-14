@@ -7,36 +7,41 @@ st.set_page_config(page_title="Talabat Log Tool", layout="centered", page_icon="
 
 # 2. Comprehensive Drive Map
 DRIVE_MAP = [
-    "Complaint about late order", "Check order status", "Refunds/Wallet/Double Charge",
-    "Partner related inquiry", "Missing item / Wrong item", "Delivery area/fee inquiry",
-    "Negative", "Positive", "Order tracking issue"
+    "Complaint about short delay (0-10 mins)", "Complaint about moderate delay (11-20 mins)",
+    "Complaint about severe delay (21-30 mins)", "Complaint about extreme delay (+30 mins)",
+    "Follow up on existing case", "Check order status", "Refunds/Wallet/Double Charge",
+    "Partner related inquiry", "Missing item", "Wrong item", "Spilled food",
+    "Delivery area/fee inquiry", "Negative feedback", "Positive feedback", 
+    "Order tracking issue", "Payment method inquiry", "Rider related inquiry"
 ]
 
 # 3. UI
-st.title("🍔 Talabat Log Tool (Concise)")
+st.title("🍔 Talabat Log Tool (The Concise Way)")
 st.markdown("---")
 
 chat_input = st.text_area("Paste Transcript / Details:", height=150)
 selected_drive = st.selectbox("Select Contact Drive:", options=DRIVE_MAP)
 
-if st.button("🚀 Generate Pro Log"):
+if st.button("🚀 Generate Concise Log"):
     if chat_input:
         with st.spinner('Writing log...'):
             api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
             client = Groq(api_key=api_key)
             
-            # البرومبت الجديد: صارم جداً ومختصر
+            # البرومبت ده صارم: (Context // Action // Action // Resolution // Outcome)
             prompt = f"""
             You are a professional Talabat agent. Analyze the transcript for: {selected_drive}.
             
-            Generate a log in this exact format:
-            [Issue Context] // [Action 1] // [Action 2] // [Resolution/Compensation] // [Outcome]
+            Generate a log in this exact strict format:
+            [Issue/Context] // [Action 1] // [Action 2] // [Resolution/Comp] // [Outcome/Status]
             
             RULES:
-            1. Use abbreviations (CST, RST, comp, OT, cst info).
-            2. NO greetings, NO endings, NO survey mentions, NO "Dear customer" fluff.
-            3. Be factual, technical, and concise.
-            4. Follow the slash-separated pattern strictly.
+            1. NO greetings, NO endings, NO survey mentions, NO "Dear customer".
+            2. Use technical abbreviations (CST, RST, comp, OT, TGO, TMP).
+            3. Be factual and extremely concise.
+            4. If no compensation was given, skip the comp part.
+            5. Follow the slash-separated pattern strictly.
+            6. No Arabic words, use English only.
             """
             
             try:
