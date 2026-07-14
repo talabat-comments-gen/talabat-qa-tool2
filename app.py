@@ -4,22 +4,35 @@ import re
 from groq import Groq
 
 # 1. Config
-st.set_page_config(page_title="Talabat Log Tool", layout="wide") # wide عشان العمودين ياخدوا راحتهم
+st.set_page_config(page_title="Talabat Log Tool", layout="wide")
 
-# 2. Comprehensive Contact Drives
+# 2. Master Contact Drives List (Comprehensive)
 DRIVE_LIST = [
-    "Complaint about short delay (0-10 mins)", "Complaint about moderate delay (11-20 mins)",
-    "Complaint about severe delay (21-30 mins)", "Complaint about extreme delay (+30 mins)",
-    "Follow up on existing case", "Check order status", "Refunds/Wallet/Double Charge",
-    "Partner related inquiry", "Missing item / Wrong item", "Delivery area/fee inquiry",
-    "Negative feedback", "Positive feedback", "Order tracking issue", "Payment method inquiry"
+    "Complaint about short delay (0-10 mins)",
+    "Complaint about moderate delay (11-20 mins)",
+    "Complaint about severe delay (21-30 mins)",
+    "Complaint about extreme delay (+30 mins)",
+    "Order cancellation / Refund request",
+    "Missing item / Wrong item / Spilled food",
+    "Food quality / Temperature / Allergens",
+    "Check order status / Tracking issue",
+    "Payment method / Double charge / Wallet",
+    "Partner related inquiry (Menu, availability)",
+    "Rider related inquiry (Behavior, contact)",
+    "Delivery area / Fee inquiry",
+    "Invoice / VAT / Receipt issues",
+    "Account / Subscription / Loyalty / Rewards",
+    "Technical issue (App/Website)",
+    "Contactless delivery inquiry",
+    "Follow up on existing case",
+    "Positive feedback",
+    "Negative feedback"
 ]
 
 # 3. UI
-st.title("🍔 Talabat Log Tool")
+st.title("🍔 Talabat Log Tool (Master Version)")
 st.markdown("---")
 
-# Layout
 col_input1, col_input2 = st.columns([2, 1])
 with col_input1:
     chat_input = st.text_area("Paste Chat Transcript:", height=150)
@@ -35,7 +48,7 @@ if st.button("🚀 Generate Comment"):
             prompt = f"""
             You are a strict Talabat Log Generator. Analyze the transcript for: {selected_drive}.
             
-            OUTPUT FORMAT (MUST FOLLOW THIS EXACTLY):
+            OUTPUT FORMAT (FOLLOW EXACTLY):
             SUMMARY: [One single sentence summary of the issue]
             COMMENT: [Issue/Context] // [Action 1] // [Action 2] // [Resolution/Comp] // [Outcome]
             
@@ -44,6 +57,7 @@ if st.button("🚀 Generate Comment"):
             2. Strict format for COMMENT: [Issue] // [Action] // [Action] // [Res] // [Outcome].
             3. Use technical abbreviations (CST, RST, OT, comp, cst info).
             4. No Arabic in the output (English only).
+            5. If no compensation, end after Resolution.
             """
             
             try:
@@ -53,7 +67,6 @@ if st.button("🚀 Generate Comment"):
                 )
                 output = response.choices[0].message.content
                 
-                # Parsing results
                 sum_match = re.search(r'SUMMARY:(.*?)(?=COMMENT:)', output, re.DOTALL | re.IGNORECASE)
                 com_match = re.search(r'COMMENT:(.*)', output, re.DOTALL | re.IGNORECASE)
                 
@@ -62,7 +75,6 @@ if st.button("🚀 Generate Comment"):
             except Exception as e:
                 st.error(f"Error: {e}")
 
-# 4. Side-by-Side Display
 if "summary" in st.session_state:
     st.markdown("---")
     res_col1, res_col2 = st.columns(2)
