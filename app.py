@@ -2,8 +2,8 @@ import streamlit as st
 import os
 from groq import Groq
 
-st.set_page_config(page_title="Talabat Raw Logger", layout="centered")
-st.title("🚀 Talabat Event Logger")
+st.set_page_config(page_title="Talabat Data Logger", layout="centered")
+st.title("🚀 Talabat Data Logger (Schema Mode)")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 
@@ -21,19 +21,21 @@ chat_input = st.text_area("Paste chat here:", height=200)
 
 if st.button("Generate Log"):
     if chat_input:
-        with st.spinner('Logging events...'):
+        with st.spinner('Parsing data...'):
             try:
-                # الـ Prompt ده ممنوع فيه التفكير، ممنوع فيه الحالة، وممنوع فيه الرغي
+                # الـ Prompt الجديد مجبر على اتباع الـ Schema بتاعك حرفياً
                 system_prompt = """
-                You are a pure event logger. 
-                1. Strip ALL apologies, greetings, thanks, and polite fluff.
-                2. DO NOT write any 'Status', 'Outcome', or 'Resolution'. 
-                3. DO NOT interpret. ONLY state what the Customer asked and what the Agent did.
-                4. Use bullet points.
+                You are a data extraction engine. Output ONLY the data in this exact schema. 
+                DO NOT write conversational sentences, apologies, or intros.
                 
                 Format:
-                Customer: [Core request or action]
-                Agent: [Action taken]
+                [CST Request] // [Issue Type] // [Details] // [Action/Result] // [System Error Info] // [CST Info]
+                
+                Rules:
+                1. If any field is missing from the chat, write 'N/A'.
+                2. If there is a JSON error from the system, copy it exactly as is.
+                3. Do NOT add any extra text outside of the schema.
+                4. Be concise and technical.
                 """
 
                 chat_completion = client.chat.completions.create(
@@ -45,7 +47,7 @@ if st.button("Generate Log"):
                     temperature=0.0
                 )
                 
-                st.text_area("Event Log:", value=chat_completion.choices[0].message.content, height=250)
+                st.text_area("Result:", value=chat_completion.choices[0].message.content, height=150)
                 
             except Exception as e:
                 st.error(f"Groq Error: {e}")
