@@ -3,19 +3,18 @@ import os
 from groq import Groq
 
 # 1. Config
-st.set_page_config(page_title="Surgical Pro v22", layout="centered")
+st.set_page_config(page_title="Surgical Pro v23", layout="centered")
 
-# State Management
 if "golden_examples" not in st.session_state: st.session_state.golden_examples = []
 if "selected_result" not in st.session_state: st.session_state.selected_result = ""
 if "voted" not in st.session_state: st.session_state.voted = False
 
-st.title("🚀 Surgical Pro v22")
+st.title("🚀 Surgical Pro v23")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
-# Input Section - Minimalist
+# Input
 chat_input = st.text_area("Paste chat transcript:", height=150)
 contact_drive = st.text_input("Contact Drive:")
 
@@ -25,21 +24,20 @@ if st.button("Generate 4 Variations"):
         with st.spinner('Analyzing...'):
             memory_str = "\n".join(st.session_state.golden_examples)
             
-            # Prompt مُركز فقط على الـ Drive
             prompt = f"""
             You are a Senior Talabat Agent. Generate FOUR distinct variations (A, B, C, D).
-            
-            Memory (Adopt this style): {memory_str}
+            Memory: {memory_str}
             CONTACT DRIVE: {contact_drive if contact_drive else "General Inquiry"}
             
-            CORE INSTRUCTION: 
-            Use the CONTACT DRIVE as the primary [Issue] classification. 
-            Ignore generic or standard categories if the Contact Drive suggests a specific focus.
-            
-            Format for each:
-            [OPTION_X]
+            Format:
+            [OPTION_A]
             [SUMMARY]: ...
             [DATA]: [Issue] // [Details] // [Action] // [Order ID]
+            
+            [OPTION_B]
+            ...
+            
+            (Repeat for C and D)
             
             STRICT RULES:
             - NO UNCLEAR section.
@@ -53,35 +51,51 @@ if st.button("Generate 4 Variations"):
             )
             st.session_state.raw_response = response.choices[0].message.content
 
-# 2. Display & Selection
+# 2. Robust Parsing
 if "raw_response" in st.session_state:
     raw = st.session_state.raw_response
+    options = {}
     
-    options = {"A": "", "B": "", "C": "", "D": ""}
+    # محاولة ذكية للتقطيع بدون كراش
+    found_any = False
     for opt in ["A", "B", "C", "D"]:
-        try:
-            part = raw.split(f"[OPTION_{opt}]")[1].split("[OPTION_")[0]
-            options[opt] = part.strip()
-        except:
-            options[opt] = "Error generating."
+        tag = f"[OPTION_{opt}]"
+        if tag in raw:
+            try:
+                # قص الجزء الخاص بالخيار ده
+                part = raw.split(tag)[1]
+                # تنظيف من التاغ اللي بعده
+                for next_opt in ["A", "B", "C", "D"]:
+                    if f"[OPTION_{next_opt}]" in part:
+                        part = part.split(f"[OPTION_{next_opt}]")[0]
+                options[opt] = part.strip()
+                found_any = True
+            except:
+                options[opt] = "Parsing error for this section."
+        else:
+            options[opt] = None
 
-    if not st.session_state.voted:
-        for opt, content in options.items():
-            st.subheader(f"Option {opt}")
-            st.code(content, language=None)
-            
-            if st.button(f"✅ Vote & Select Option {opt}"):
-                st.session_state.selected_result = content
-                st.session_state.golden_examples.append(content)
-                st.session_state.voted = True
-                st.rerun()
+    if not found_any:
+        st.error("AI output format mismatch. Raw output:")
+        st.code(raw)
     else:
-        st.success("🎉 Thanks for your feedback! The AI has been trained on your choice.")
-        if st.button("🔄 Reset & Generate New"):
-            st.session_state.voted = False
-            st.rerun()
+        # عرض النتائج
+        if not st.session_state.voted:
+            for opt, content in options.items():
+                if content:
+                    st.subheader(f"Option {opt}")
+                    st.code(content, language=None)
+                    if st.button(f"✅ Vote & Select Option {opt}"):
+                        st.session_state.selected_result = content
+                        st.session_state.golden_examples.append(content)
+                        st.session_state.voted = True
+                        st.rerun()
+        else:
+            st.success("🎉 Thanks for your feedback!")
+            if st.button("🔄 Reset"):
+                st.session_state.voted = False
+                st.rerun()
 
-# 3. Final Result
 if st.session_state.selected_result and st.session_state.voted:
     st.divider()
     st.subheader("Final Selected Report")
