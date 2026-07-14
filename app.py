@@ -3,8 +3,8 @@ import os
 import time
 from groq import Groq
 
-st.set_page_config(page_title="Talabat Raw Log", layout="centered")
-st.title("🚀 Talabat Raw Log (Mirror Mode)")
+st.set_page_config(page_title="Talabat Log Engine", layout="centered")
+st.title("🚀 Talabat Log Engine (4-Line Summary)")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 
@@ -23,26 +23,24 @@ chat_input = st.text_area("Paste chat here:", height=200)
 
 if st.button("Generate Log"):
     if chat_input:
-        # العد التنازلي
         with st.empty():
             for seconds in range(3, 0, -1):
                 st.info(f"Analyzing... {seconds}")
                 time.sleep(1)
             st.empty()
 
-        with st.spinner('Extracting...'):
+        with st.spinner('Summarizing...'):
             try:
-                # الـ Prompt ده "حرفي" جداً وممنوع فيه التجويد
+                # الـ Prompt الجديد هيجبره يكتب 4 سطور بالظبط
                 system_prompt = """
-                You are a literal logging machine. 
-                1. Read the chat and list EXACT events as they happened.
-                2. Do NOT paraphrase, do NOT summarize, and do NOT use professional jargon.
-                3. If the agent did not say a specific thing, DO NOT write it.
-                4. Agent Actions: List what actually happened (e.g., 'asked for photo', 'checked order').
-                5. Format strictly:
-                CST: [User issue keywords] // Agent: [Actual actions] // Status: [Outcome]
-                6. If the chat ended because of no response: 'ended chat since customer not responding'.
-                7. English only. No politeness. No 'I'.
+                You are a logging assistant. Summarize the chat in EXACTLY 4 lines.
+                Use plain, simple English. NO jargon, NO fluff, NO politeness.
+                
+                Format:
+                CST: [Customer issue in simple words]
+                Agent: [What I did, short and direct]
+                Notes: [Key case details or blockers]
+                Status: ended chat since customer not responding
                 """
 
                 chat_completion = client.chat.completions.create(
@@ -55,7 +53,7 @@ if st.button("Generate Log"):
                 )
                 
                 # الكومنت بار أطول
-                st.text_area("Log:", value=chat_completion.choices[0].message.content, height=250)
+                st.text_area("Log:", value=chat_completion.choices[0].message.content, height=200)
                 
             except Exception as e:
                 st.error(f"Groq Error: {e}")
