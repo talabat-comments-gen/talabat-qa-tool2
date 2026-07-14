@@ -1,6 +1,5 @@
 import streamlit as st
 import os
-import re
 from groq import Groq
 
 # 1. Config
@@ -11,50 +10,38 @@ DRIVE_MAP = [
     "Complaint about short delay (0-10 mins)", "Complaint about moderate delay (11-20 mins)",
     "Complaint about severe delay (21-30 mins)", "Complaint about extreme delay (+30 mins)",
     "Follow up on existing case", "Check order status", "Refunds/Wallet/Double Charge",
-    "Partner related inquiry", "Positive", "Negative", "Order tracking issue", "Missing item"
+    "Partner related inquiry", "Positive", "Negative", "Order tracking issue", "Missing item",
+    "Partner related inquiry", "Rider related inquiry", "Delivery area/fee inquiry"
 ]
 
-# 3. State
-if "summary" not in st.session_state: st.session_state.summary = ""
-if "comment" not in st.session_state: st.session_state.comment = ""
-
-# 4. UI Input
-st.title("🍔 Talabat Log Tool")
+# 3. UI Input
+st.title("🍔 Talabat Log Tool (Simple & Pro)")
 st.markdown("---")
-chat_input = st.text_area("Paste Transcript / Details:", height=150)
-selected_drive = st.selectbox("Select Contact Drive (For Context):", options=DRIVE_MAP)
 
-# 5. Generation Logic
-if st.button("🚀 Generate Natural Log"):
+chat_input = st.text_area("Paste Transcript / Details:", height=150)
+selected_drive = st.selectbox("Select Contact Drive (Context):", options=DRIVE_MAP)
+
+if st.button("🚀 Generate Simple Log"):
     if chat_input:
-        with st.spinner('Writing professional log...'):
+        with st.spinner('Writing simple & clear log...'):
             api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
             client = Groq(api_key=api_key)
             
+            # التعديل هنا: تعليمات بشرية بسيطة جداً
             prompt = f"""
-            You are a Senior Talabat Agent. Write a professional log based on the transcript provided.
+            You are a professional Talabat agent. Analyze the transcript based on: {selected_drive}.
             
-            CONTACT DRIVE: {selected_drive}
+            Write the output in TWO parts:
+            1. SUMMARY: One sentence summary of the issue.
+            2. COMMENT: A clear, logical log of what happened.
+               - Start by stating what the customer wanted/complained about.
+               - List exactly what you did (e.g., contacted restaurant, checked status, applied voucher).
+               - State the result (e.g., customer satisfied).
             
-            INSTRUCTIONS:
-            1. Write a professional, concise SUMMARY in the [SUMMARY] section.
-            2. Write a technical COMMENT (Log) in the [COMMENT] section.
-            
-            COMMENT FORMAT RULES:
-            - Do NOT use fixed phrases like "asper last comment".
-            - Use the following separator structure for a dense, professional look:
-              Category // Status/Context // (( Actions taken, Internal checks, Compensations )) // Outcome // Next Steps // Info Channel
-            - Use "(( ))" for details or sub-logs.
-            - Use "////////" only if you need to separate distinct internal notes or actions.
-            - Focus on: What happened? What did we do? What's the outcome?
-            - No Arabic.
-            - Use abbreviations (CST, RST, RNA, OT, TGO, TMP).
-            
-            Output format:
-            [SUMMARY]
-            ...
-            [COMMENT]
-            ...
+            RULES:
+            - Write in plain, professional English.
+            - NO weird symbols, NO dense formatting, NO "asper last comment" templates.
+            - Just clear, rational sentences that anyone can understand.
             """
             
             try:
@@ -64,19 +51,21 @@ if st.button("🚀 Generate Natural Log"):
                 )
                 raw_text = response.choices[0].message.content
                 
-                sum_match = re.search(r'\[SUMMARY\](.*?)\[COMMENT\]', raw_text, re.DOTALL)
-                com_match = re.search(r'\[COMMENT\](.*)', raw_text, re.DOTALL)
+                # فصل الـ Summary عن الـ Comment
+                parts = raw_text.split("COMMENT:") if "COMMENT:" in raw_text else raw_text.split("COMMENT")
+                summary = parts[0].replace("SUMMARY:", "").strip() if len(parts) > 0 else "N/A"
+                comment = parts[1].strip() if len(parts) > 1 else raw_text
                 
-                st.session_state.summary = sum_match.group(1).strip() if sum_match else "Could not parse summary."
-                st.session_state.comment = com_match.group(1).strip() if com_match else raw_text
+                st.session_state.summary = summary
+                st.session_state.comment = comment
             except Exception as e:
                 st.error(f"Error: {e}")
 
 # 6. Display Result
-if st.session_state.summary:
-    tab1, tab2 = st.tabs(["📋 Summary", "📝 Professional Log"])
+if "summary" in st.session_state and st.session_state.summary:
+    tab1, tab2 = st.tabs(["📋 Summary", "📝 Professional Log (Comment)"])
     with tab1: st.write(st.session_state.summary)
-    with tab2: st.code(st.session_state.comment, language=None)
+    with tab2: st.write(st.session_state.comment)
         
     if st.button("🔄 Reset"):
         st.session_state.summary = ""
