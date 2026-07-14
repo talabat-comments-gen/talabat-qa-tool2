@@ -21,33 +21,44 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. State Management
+# 2. Options List
+CONTACT_DRIVES = [
+    "Check order status", "Complain about late order - tMP & tGO", "ETA is stuck or increasing (TGO)",
+    "Order marked as delivered but didn't receive (TGO)", "Restaurant hasn't started preparing the food (TGO)",
+    "Order tracking issue TMP & TGO", "Order will not be processed (Cancellation)",
+    "Need help locating partner for pickup", "Complaint about short delay", "Complaint about moderate delay",
+    "Complaint about severe delay", "Complaint about extreme delay", "Missing item", "Wrong item", 
+    "Wrong order", "Order never arrived", "Spilled food", "Food quality", "Food temperature",
+    "Food poisoning", "Missing equipment/uniform", "Order not delivered to doorstep", "Refund query",
+    "Refund request", "Double Charge", "Damaged item", "Voucher request", "Voucher not received",
+    "Follow up on existing case", "Positive", "Negative", "Spam / Irrelevant"
+]
+
+# 3. State Management
 if "golden_examples" not in st.session_state: st.session_state.golden_examples = []
 if "voted" not in st.session_state: st.session_state.voted = False
 if "raw_response" not in st.session_state: st.session_state.raw_response = None
 if "selected_result" not in st.session_state: st.session_state.selected_result = ""
 
-# 3. Header
+# 4. Header
 st.title("🍔 Talabat Comment Generator")
 st.markdown("---")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
-# 4. Input Section
+# 5. Input Section
 chat_input = st.text_area("Paste Chat Transcript:", height=150, placeholder="Paste conversation here...")
-# (Using a simpler selectbox or text_input based on preference)
-contact_drive = st.text_input("Contact Drive:", placeholder="e.g., Complain about late order")
+selected_drive = st.selectbox("Select Contact Drive:", options=CONTACT_DRIVES) # الـ Scroll رجعت هنا!
 
 if st.button("🚀 Generate Distinct Variations"):
     if chat_input:
         st.session_state.voted = False
         with st.spinner('Generating professional, distinct variants...'):
             
-            # التعديل هنا: طلبنا منه صراحة يعمل تنوع
             prompt = f"""
             You are a Senior Talabat Agent. Generate FOUR distinct variations (A, B, C, D).
-            CONTACT DRIVE: {contact_drive}
+            CONTACT DRIVE: {selected_drive}
             
             CORE INSTRUCTION:
             - Variation A: Focus on Empathy and Apology.
@@ -70,7 +81,6 @@ if st.button("🚀 Generate Distinct Variations"):
             """
             
             try:
-                # Temperature 0.7 بيخلي الموديل يغير في الصياغة
                 response = client.chat.completions.create(
                     messages=[{"role": "system", "content": prompt}, {"role": "user", "content": f"Transcript: {chat_input}"}],
                     model="llama-3.1-8b-instant", temperature=0.7
@@ -79,7 +89,7 @@ if st.button("🚀 Generate Distinct Variations"):
             except Exception as e:
                 st.error(f"Error: {str(e)}")
 
-# 5. Parsing & Display
+# 6. Parsing & Display
 if st.session_state.raw_response:
     raw = st.session_state.raw_response
     parts = re.split(r'\[OPTION_[A-D]\]', raw)
@@ -87,7 +97,6 @@ if st.session_state.raw_response:
 
     if len(options) >= 4:
         st.markdown("### Choose the Best Option:")
-        # العرض هنا بيفضل ظاهر لحد ما تعمل Vote
         for i, opt_label in enumerate(['A', 'B', 'C', 'D']):
             with st.container(border=True):
                 st.subheader(f"Option {opt_label}")
