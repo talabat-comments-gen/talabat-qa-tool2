@@ -20,11 +20,13 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Comprehensive Drive Map (Full List)
+# 2. Comprehensive Drive Map (Split Delay Categories)
 DRIVE_MAP = {
+    "Complaint about short delay (0-10 mins)": "Delivery time exceeded by 0-10 mins. Low impact, standard apology required.",
+    "Complaint about moderate delay (11-20 mins)": "Delivery time exceeded by 11-20 mins. Moderate impact, check status and reassure.",
+    "Complaint about severe delay (21-30 mins)": "Delivery time exceeded by 21-30 mins. High impact, verify with restaurant/rider, assess compensation.",
+    "Complaint about extreme delay (+30 mins)": "Delivery time exceeded by +30 mins. Critical impact, escalation or compensation required.",
     "Check order status": "Checking current order progress, location, or ETA.",
-    "Complain about late order - tMP & tGO": "Delayed order in TMP or TGO delivery. Needs investigation.",
-    "ETA is stuck or increasing (TGO)": "TGO delivery ETA is not updating or increasing.",
     "Order marked as delivered but didn't receive (TGO)": "System shows delivered but customer claims non-receipt.",
     "Restaurant hasn't started preparing the food (TGO)": "Restaurant latency issues.",
     "Didn't receive order confirmation": "Technical issue or delay in receiving order confirmation.",
@@ -34,12 +36,11 @@ DRIVE_MAP = {
     "Order not assigned to rider": "Logistics issue, rider not found/assigned.",
     "Need help locating partner for pickup": "Pickup issue, location/contact clarification.",
     "Item unavailable for pickup": "Partner issue, item stock out.",
-    "Complaint about short/moderate/severe/extreme delay": "Addressing specific delay durations and corresponding compensation/action.",
     "Address/Delivery issues": "Address correction, delivery instructions not followed.",
     "Food items/Cooking instructions": "Issues with food preparation or ingredients.",
     "Payment method/Voucher/Contact Details": "Inquiries on payments, voucher applications, or profile updates.",
     "Change expedition type/time/outlet": "Request to modify pickup or delivery parameters.",
-    "Missing/Wrong item/Order/Spilled food": "Quality or accuracy complaints (Missing, Wrong, Spilled).",
+    "Missing/Wrong item/Order/Spilled food": "Quality or accuracy complaints.",
     "Food quality/Temperature/Poisoning/Allergens": "Food safety and quality issues.",
     "Foreign Object": "Safety escalation (Foreign object in food).",
     "Inappropriate behavior": "Conduct complaint against rider/partner.",
@@ -69,7 +70,7 @@ if "generated_comment" not in st.session_state: st.session_state.generated_comme
 
 # 4. Header
 st.title("🍔 Talabat Log Generator")
-st.markdown("### Full Resolution & Action Log")
+st.markdown("### Focus: Resolution & Action Taken")
 st.markdown("---")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
@@ -77,23 +78,24 @@ client = Groq(api_key=api_key)
 
 # 5. Input Section
 chat_input = st.text_area("Paste Chat Transcript:", height=150, placeholder="Paste conversation here...")
-selected_drive = st.selectbox("Select Contact Drive (Context dictates stance):", options=list(DRIVE_MAP.keys()))
+selected_drive = st.selectbox("Select Contact Drive:", options=list(DRIVE_MAP.keys()))
 
 if st.button("🚀 Generate Final Resolution Log"):
     if chat_input:
-        with st.spinner('Analyzing stance and crafting log...'):
+        with st.spinner('Crafting resolution log...'):
             selected_desc = DRIVE_MAP[selected_drive]
             
             prompt = f"""
-            You are a Senior Talabat Agent. Write ONE comprehensive, professional, technical log comment.
+            You are a Senior Talabat Agent. Write ONE comprehensive, professional, technical log comment based on the chat transcript.
             
             CONTACT DRIVE: {selected_drive}
-            CONTEXT: {selected_desc}
+            CONTEXT/IMPACT: {selected_desc}
             
             CORE INSTRUCTION:
-            - Analyze the transcript using the provided Context.
+            - Analyze the transcript through the lens of the Contact Drive.
             - Focus HEAVILY on Resolution and Action Taken.
-            - Ensure the tone is technical, objective, and dense.
+            - Explain the stance of the case clearly.
+            - Ensure the tone is professional, technical, and objective.
             
             Format strictly in this dense format:
             [Issue Category] // [Status/Logic Details] (( [Sub-logic details: Resolution and Actions taken] )) // [Outcome] // [Next Steps] // [Info Channel]
@@ -102,7 +104,7 @@ if st.button("🚀 Generate Final Resolution Log"):
             - NO Order ID.
             - NO Arabic.
             - Use abbreviations (CST, RST, RNA, OT, TGO, TMP).
-            - The output must be ONE long, dense paragraph.
+            - The output must be ONE long paragraph of dense technical details.
             """
             
             try:
