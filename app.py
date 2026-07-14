@@ -3,8 +3,8 @@ import os
 import time
 from groq import Groq
 
-# 1. Page Config
-st.set_page_config(page_title="Talabat Surgical Pro v8", layout="centered")
+# 1. Config
+st.set_page_config(page_title="Talabat Surgical Pro v9", layout="centered")
 
 st.markdown("""
     <style>
@@ -14,15 +14,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🚀 Talabat Surgical Pro v8")
+st.title("🚀 Talabat Surgical Pro v9 (Clarity Engine)")
 
 # 2. Abbreviations
 abbreviations = {
     "CST": "Customer", "RST": "Restaurant", "RNA": "Restaurant/Rider Not Answering",
     "FU": "Follow Up", "OTW": "On The Way", "NAT": "No action taken",
     "T&C": "Terms & Condition", "SPV": "Supervisor", "TC": "Talabat Credit",
-    "ETA": "Estimated Time Arrival", "R&V": "Refund & Validation", "Info": "Informed",
-    "CNA": "Customer Not Answering", "PR": "Partial Refund", "FR": "Full Refund"
+    "ETA": "Estimated Time Arrival", "R&V": "Refund & Validation", "Info": "Informed"
 }
 
 with st.expander("📚 Abbreviations Glossary"):
@@ -35,27 +34,21 @@ chat_input = st.text_area("Paste chat transcript here:", height=200)
 
 if st.button("Generate Final Report"):
     if chat_input:
-        with st.spinner('Refining Logic & Rhythm...'):
-            # Progress simulation
-            progress_bar = st.progress(0)
-            for i in range(5):
-                time.sleep(0.5)
-                progress_bar.progress((i + 1) * 20)
-            
+        with st.spinner('Analyzing Ambiguities...'):
             try:
-                # الـ Prompt الجديد: يركز على الـ Rhythm والـ Accuracy
                 system_prompt = """
                 You are a Senior Talabat Agent. Your output must be ready to copy without review.
                 
-                RHYTHM RULES:
-                1. [SUMMARY]: A single, sharp, punchy sentence. Example: "CST reported missing items from RST order and requested immediate compensation."
-                2. [DATA]: Use EXACT format: [Issue] // [Details] // [Action] // [Order ID].
+                YOUR MISSION:
+                1. Write a Sharp Summary (one professional sentence).
+                2. Extract data into lines with this EXACT format: [Issue] // [Details] // [Action] // [Order ID].
+                3. CRITICAL: AMBIGUITY DETECTION. If any part of the chat is vague, missing details, or unclear (e.g., missing Order ID, unclear customer request), DO NOT GUESS.
+                   - List such parts under a separate '[UNCLEAR]' section and explain why (e.g., "Missing Order ID", "Ambiguous request").
                 
-                STRICT CONSTRAINTS:
+                STRICT RULES:
                 - Use provided abbreviations (CST, RST, RNA, NAT).
-                - Logic: If clarification -> state what was clarified. If complaint -> state the failure.
                 - NO ARABIC.
-                - If the AI fails to generate the summary or data, you have failed the mission. Be precise.
+                - If the info is unclear, the [UNCLEAR] section is MANDATORY.
                 """
 
                 chat_completion = client.chat.completions.create(
@@ -69,29 +62,39 @@ if st.button("Generate Final Report"):
                 
                 raw_output = chat_completion.choices[0].message.content
                 
-                # Parsing
-                summary = "System error: Failed to generate summary."
+                # Parsing logic for 3 sections
+                summary = "System error."
                 data_points = []
+                unclear_points = []
                 
-                # إجباري الموديل يلتزم بالتاجز
                 if "[SUMMARY]:" in raw_output:
-                    temp = raw_output.split("[SUMMARY]:")[1]
-                    if "[DATA]:" in temp:
-                        summary = temp.split("[DATA]:")[0].strip()
-                        data_raw = temp.split("[DATA]:")[1].strip()
+                    parts = raw_output.split("[SUMMARY]:")[1]
+                    # Split logic
+                    if "[DATA]:" in parts:
+                        summary = parts.split("[DATA]:")[0].strip()
+                        remaining = parts.split("[DATA]:")[1]
+                        
+                        if "[UNCLEAR]:" in remaining:
+                            data_raw = remaining.split("[UNCLEAR]:")[0].strip()
+                            unclear_raw = remaining.split("[UNCLEAR]:")[1].strip()
+                            unclear_points = [line.strip() for line in unclear_raw.split('\n') if line.strip()]
+                        else:
+                            data_raw = remaining.strip()
+                        
                         data_points = [line.strip() for line in data_raw.split('\n') if line.strip() and "//" in line]
-                    else:
-                        summary = temp.strip()
 
                 # Display
                 st.subheader("Sharp Summary")
                 st.info(summary)
                 
                 st.subheader("Surgical Breakdown")
-                st.metric("Total Lines", len(data_points))
-                
                 for point in data_points:
                     st.code(point, language=None)
+                
+                if unclear_points:
+                    st.warning("⚠️ Ambiguous/Unclear Sections:")
+                    for point in unclear_points:
+                        st.error(point)
                     
             except Exception as e:
                 st.error(f"Error: {e}")
