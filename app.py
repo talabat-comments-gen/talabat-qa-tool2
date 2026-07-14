@@ -3,8 +3,8 @@ import os
 import time
 from groq import Groq
 
-st.set_page_config(page_title="Talabat comment generator", layout="centered")
-st.title("🚀 Talabat comment generator (Strict Mode)")
+st.set_page_config(page_title="Talabat Log Engine", layout="centered")
+st.title("🚀 Talabat Log Engine (Strict Data)")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 
@@ -24,27 +24,27 @@ if st.button("Generate Log"):
     if chat_input:
         with st.empty():
             for seconds in range(3, 0, -1):
-                st.info(f"Extracting Data... {seconds}")
+                st.info(f"Analyzing... {seconds}")
                 time.sleep(1)
             st.empty()
 
-        with st.spinner('Processing...'):
+        with st.spinner('Extracting facts...'):
             try:
-                # الـ Prompt ده "مقفول" على 4 سطور، ممنوع الجمل، وممنوع الـ "I"
+                # الـ Prompt ده "بيعمل بلوك" لأي اعتذار أو مجاملة
                 system_prompt = """
-                You are a Data Entry Clerk. Extract info into 4 lines ONLY. 
-                NO full sentences. Use bullet-style shorthand.
+                You are a data logger. Extract ONLY the functional facts.
+                
+                STRICT RULES:
+                1. IGNORE all apologies, thank yous, and pleasantries from both CST and Agent.
+                2. Write ONLY the problem and the operational action.
+                3. If the agent apologized, IGNORE it. Write the step taken (e.g., 'Checked order', 'Escalated to finance').
+                4. No full sentences. Use shorthand.
                 
                 Format:
-                CST: [Item issue / Problem]
-                Agent: [Action 1, Action 2]
-                Notes: [Key facts / Details]
+                CST: [Problem]
+                Agent: [Action taken]
+                Notes: [Specifics: missing items, order details, etc.]
                 Status: ended chat since customer not responding
-                
-                Rules:
-                1. NO "I", NO politeness, NO fluff.
-                2. If no details, write N/A.
-                3. Use simple, direct keywords.
                 """
 
                 chat_completion = client.chat.completions.create(
