@@ -1,16 +1,16 @@
 import streamlit as st
 from groq import Groq
 
-# Page settings
 st.set_page_config(page_title="Talabat QA Engine", layout="centered")
 st.title("🚀 Talabat QA Analysis Engine")
 
-# Load Groq API Key
+# كشف الأعطال في السيكريتس
 try:
     api_key = st.secrets["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"]
     client = Groq(api_key=api_key)
 except Exception as e:
-    st.error("Error: Please add GROQ_API_KEY to Streamlit Secrets.")
+    st.error(f"System Error: {e}")
+    st.warning(f"The system currently sees these keys in your Secrets: {list(st.secrets.keys())}")
     st.stop()
 
 # Text area
@@ -33,7 +33,7 @@ if st.button("Generate Analysis"):
                 
                 chat_completion = client.chat.completions.create(
                     messages=[{"role": "user", "content": prompt}],
-                    model="llama3-70b-8192", # موديل قوي جداً وسريع
+                    model="llama3-70b-8192",
                     temperature=0.3
                 )
                 
