@@ -1,60 +1,79 @@
 import streamlit as st
 import os
+import re
 from groq import Groq
 
 # 1. Config
-st.set_page_config(page_title="Talabat Log Tool", layout="centered")
+st.set_page_config(page_title="Talabat Log Tool", layout="wide") # wide عشان العمودين ياخدوا راحتهم
 
-# 2. Comprehensive Contact Drives (All types)
+# 2. Comprehensive Contact Drives
 DRIVE_LIST = [
-    "Follow up on existing case", "Contactless delivery feature inquiry", "Payment method inquiry",
-    "Partner related inquiry", "Rider related inquiry", "Delivery area/fee inquiry",
-    "Promotions and deals inquiry", "Non-live order inquiry", "Loyalty program inquiry",
-    "Work with us", "Logistics as a service inquiry", "Positive", "Negative",
-    "Spam / Irrelevant", "Silent Chats", "Menu price discrepancy", "Mistake on menu",
     "Complaint about short delay (0-10 mins)", "Complaint about moderate delay (11-20 mins)",
-    "Complaint about severe delay (21-30 mins)", "Complaint about extreme delay (+30 mins)"
+    "Complaint about severe delay (21-30 mins)", "Complaint about extreme delay (+30 mins)",
+    "Follow up on existing case", "Check order status", "Refunds/Wallet/Double Charge",
+    "Partner related inquiry", "Missing item / Wrong item", "Delivery area/fee inquiry",
+    "Negative feedback", "Positive feedback", "Order tracking issue", "Payment method inquiry"
 ]
 
 # 3. UI
-st.title("🍔 Talabat Log Tool (Strict)")
-chat_input = st.text_area("Paste Chat Transcript:", height=150)
-selected_drive = st.selectbox("Select Contact Drive:", options=DRIVE_LIST)
+st.title("🍔 Talabat Log Tool")
+st.markdown("---")
 
-if st.button("🚀 Generate Strict Log"):
+# Layout
+col_input1, col_input2 = st.columns([2, 1])
+with col_input1:
+    chat_input = st.text_area("Paste Chat Transcript:", height=150)
+with col_input2:
+    selected_drive = st.selectbox("Select Contact Drive:", options=DRIVE_LIST)
+
+if st.button("🚀 Generate Comment"):
     if chat_input:
         with st.spinner('Generating...'):
             api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
             client = Groq(api_key=api_key)
             
-            # البرومبت صارم جداً ومحرم فيه أي رغي
             prompt = f"""
-            You are a strict Talabat Log Generator. Analyze the transcript for the Contact Drive: {selected_drive}.
+            You are a strict Talabat Log Generator. Analyze the transcript for: {selected_drive}.
             
             OUTPUT FORMAT (MUST FOLLOW THIS EXACTLY):
             SUMMARY: [One single sentence summary of the issue]
-            LOG: [Context/Issue] // [Action 1] // [Action 2] // [Resolution/Comp] // [Outcome]
+            COMMENT: [Issue/Context] // [Action 1] // [Action 2] // [Resolution/Comp] // [Outcome]
             
             RULES:
-            1. No greetings, no endings, no "Happy to help", no "Dear customer", no survey mentions.
-            2. Use strictly this structure: [Issue] // [Action] // [Action] // [Res] // [Outcome].
+            1. No greetings, no endings, no survey mentions, no "Dear customer", no filler.
+            2. Strict format for COMMENT: [Issue] // [Action] // [Action] // [Res] // [Outcome].
             3. Use technical abbreviations (CST, RST, OT, comp, cst info).
             4. No Arabic in the output (English only).
-            5. If no compensation, end at Resolution.
             """
             
             try:
                 response = client.chat.completions.create(
                     messages=[{"role": "system", "content": prompt}, {"role": "user", "content": f"Transcript: {chat_input}"}],
-                    model="llama-3.1-8b-instant", temperature=0.1 # الحرارة منخفضة جداً عشان ميبدعش
+                    model="llama-3.1-8b-instant", temperature=0.1
                 )
                 output = response.choices[0].message.content
-                st.session_state.final_output = output
+                
+                # Parsing results
+                sum_match = re.search(r'SUMMARY:(.*?)(?=COMMENT:)', output, re.DOTALL | re.IGNORECASE)
+                com_match = re.search(r'COMMENT:(.*)', output, re.DOTALL | re.IGNORECASE)
+                
+                st.session_state.summary = sum_match.group(1).strip() if sum_match else "Could not extract Summary."
+                st.session_state.comment = com_match.group(1).strip() if com_match else output
             except Exception as e:
                 st.error(f"Error: {e}")
 
-if "final_output" in st.session_state:
-    st.text_area("Result:", value=st.session_state.final_output, height=150)
+# 4. Side-by-Side Display
+if "summary" in st.session_state:
+    st.markdown("---")
+    res_col1, res_col2 = st.columns(2)
+    with res_col1:
+        st.subheader("📋 Summary")
+        st.info(st.session_state.summary)
+    with res_col2:
+        st.subheader("📝 Comment")
+        st.code(st.session_state.comment, language=None)
+    
     if st.button("🔄 Reset"):
-        del st.session_state.final_output
+        del st.session_state.summary
+        del st.session_state.comment
         st.rerun()
