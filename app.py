@@ -1,94 +1,104 @@
 import streamlit as st
 import os
+import re
 from groq import Groq
 
-# 1. Config & Styling
-st.set_page_config(page_title="Talabat Log Generator", layout="centered", page_icon="🍔")
+# 1. Config
+st.set_page_config(page_title="Talabat Log Tool", layout="centered", page_icon="🍔")
 
 st.markdown("""
     <style>
     :root { --talabat-orange: #FF7800; }
-    .stButton>button {
-        background-color: var(--talabat-orange) !important;
-        color: white !important;
-        border-radius: 25px !important;
-        border: none !important;
-        font-weight: 700 !important;
-        transition: 0.3s !important;
-    }
-    .stButton>button:hover { background-color: #e66c00 !important; transform: scale(1.02); }
+    .stButton>button { background-color: var(--talabat-orange) !important; color: white !important; border-radius: 25px !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Comprehensive Drive Map (Full List)
+# 2. Logic (Definitions for the AI to understand the 'Stance')
 DRIVE_MAP = {
-    "Complaint about short delay (0-10 mins)": "Delivery time exceeded by 0-10 mins.",
-    "Complaint about moderate delay (11-20 mins)": "Delivery time exceeded by 11-20 mins.",
-    "Complaint about severe delay (21-30 mins)": "Delivery time exceeded by 21-30 mins.",
-    "Complaint about extreme delay (+30 mins)": "Delivery time exceeded by +30 mins.",
-    "Check order status": "Checking current order progress, location, or ETA.",
-    "Follow up on existing case": "Status check on raised complaints/refunds/escalations.",
-    "Refunds/Wallet/Double Charge": "Financial escalations, double charges, or refund requests.",
-    "Partner related inquiry": "Vendor availability, menu, hours, halal status, or contact requests.",
+    "Follow up on existing case": "Customer is checking on a raised case (Complaints/Refund/tRewards/Escalation).",
+    "Contactless delivery feature inquiry": "Customer is asking about the contactless rules and procedures.",
+    "Payment method inquiry": "Inquiry on changing payment methods, adding/removing cards, or refund reversals.",
+    "Partner related inquiry": "Inquiries about vendor availability, menu, hours, Halal confirmation, etc.",
+    "Rider related inquiry": "Inquiries on tipping, rating, or contacting the rider.",
+    "Delivery area/fee inquiry": "Inquiries about delivery coverage, high fees, or COD/Express fee disputes.",
+    "Promotions/deals/Gift Card": "Subscription, newsletter, or E-Gift card inquiries.",
+    "Non-live order inquiry": "General queries (pre-order, utensils, general ordering process).",
+    "Loyalty program inquiry": "Inquiry regarding subscription or loyalty programs.",
+    "Work with us": "Partnership or employment inquiries.",
+    "Logistics as a service inquiry": "Partner logistics service requests.",
     "Positive": "Positive feedback or review resolution.",
-    "Negative": "Negative feedback or compensation dissatisfaction."
-    # (يمكنك إضافة باقي الـ Drives هنا بنفس الطريقة)
+    "Negative": "Negative feedback or compensation dissatisfaction.",
+    "Spam / Irrelevant": "Silent chats or irrelevant inquiries.",
+    "Menu price discrepancy": "Price markup complaints (Pre-order stage).",
+    "Mistake on menu": "Errors on frontend/application (Pre-order stage)."
 }
 
-# 3. State Management
-if "generated_comment" not in st.session_state: st.session_state.generated_comment = None
+# 3. State
+if "summary" not in st.session_state: st.session_state.summary = ""
+if "comment" not in st.session_state: st.session_state.comment = ""
 
 # 4. Header
-st.title("🍔 Talabat Log Generator")
-st.markdown("### Strict Format: Resolution & Action")
+st.title("🍔 Talabat Log Tool")
 st.markdown("---")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
-# 5. Input Section
-chat_input = st.text_area("Paste Chat Transcript:", height=150, placeholder="Paste conversation here...")
-selected_drive = st.selectbox("Select Contact Drive:", options=list(DRIVE_MAP.keys()))
+# 5. UI Input
+chat_input = st.text_area("Paste Transcript:", height=150)
+selected_drive = st.selectbox("Select Contact Drive (Context):", options=list(DRIVE_MAP.keys()))
 
-if st.button("🚀 Generate Log"):
+if st.button("🚀 Generate Professional Log"):
     if chat_input:
-        with st.spinner('Formatting log...'):
-            selected_desc = DRIVE_MAP[selected_drive]
+        with st.spinner('Analyzing...'):
+            context_desc = DRIVE_MAP[selected_drive]
             
-            # التعديل الجوهري في الـ Prompt عشان يلتزم بالفورمات الصارم
             prompt = f"""
-            You are a Senior Talabat Agent. Write a professional log based on the transcript.
-            
+            You are a Senior Talabat Agent. Analyze the transcript based on the following Context:
             CONTACT DRIVE: {selected_drive}
-            CONTEXT: {selected_desc}
+            CONTEXT/DEFINITION: {context_desc}
             
-            CORE INSTRUCTION:
-            1. SUMMARY: Write a short, human-readable summary of the case.
-            2. COMMENT: Write the log EXTREMELY strictly in this pattern:
-            [Contact Drive] // asper last comment ((OT // status // asper last comment //////// “cst message”, “+++comment actual action”, //////// next steps )) // Outcome // Next Steps // Info Channel
+            Instructions:
+            - Write a professional, human-readable SUMMARY of the interaction.
+            - Write a detailed, technical COMMENT (Log) focusing on the Resolution and Action Taken.
+            - DO NOT use templates or rigid syntax. Write natural, high-quality English.
+            - Focus on: What was the issue? What did we do? What is the outcome?
             
-            RULES:
-            - Use the exact double quotes, slashes, and nested parentheses provided in the pattern.
-            - Use abbreviations (CST, RST, RNA, OT, TGO, TMP).
-            - No Arabic.
-            - No Order ID.
+            Output format (Strictly use these tags):
+            [SUMMARY]
+            ...
+            [COMMENT]
+            ...
             """
             
             try:
                 response = client.chat.completions.create(
                     messages=[{"role": "system", "content": prompt}, {"role": "user", "content": f"Transcript: {chat_input}"}],
-                    model="llama-3.1-8b-instant", temperature=0.3
+                    model="llama-3.1-8b-instant", temperature=0.5
                 )
-                st.session_state.generated_comment = response.choices[0].message.content
+                raw_text = response.choices[0].message.content
+                
+                # Parsing the result
+                sum_match = re.search(r'\[SUMMARY\](.*?)\[COMMENT\]', raw_text, re.DOTALL)
+                com_match = re.search(r'\[COMMENT\](.*)', raw_text, re.DOTALL)
+                
+                st.session_state.summary = sum_match.group(1).strip() if sum_match else "Could not parse summary."
+                st.session_state.comment = com_match.group(1).strip() if com_match else raw_text
+                
             except Exception as e:
-                st.error(f"Error: {str(e)}")
+                st.error(f"Error: {e}")
 
-# 6. Display Result
-if st.session_state.generated_comment:
-    st.markdown("### ✅ Final Output")
-    with st.container(border=True):
-        st.write(st.session_state.generated_comment)
+# 6. Display Result in Tabs
+if st.session_state.summary:
+    tab1, tab2 = st.tabs(["📋 Summary", "📝 Resolution Log (Comment)"])
+    
+    with tab1:
+        st.write(st.session_state.summary)
+        
+    with tab2:
+        st.write(st.session_state.comment)
         
     if st.button("🔄 Reset"):
-        st.session_state.generated_comment = None
+        st.session_state.summary = ""
+        st.session_state.comment = ""
         st.rerun()
