@@ -69,35 +69,31 @@ client = Groq(api_key=api_key)
 
 # 5. Input Section
 chat_input = st.text_area("Paste Chat Transcript:", height=150, placeholder="Paste conversation here...")
-# هنا التغيير: استخدمت selectbox بدل text_input
 selected_drive = st.selectbox("Select Contact Drive:", options=CONTACT_DRIVES, index=0)
 
 if st.button("Generate Variations"):
     if chat_input:
         st.session_state.voted = False
-        with st.spinner('Thinking in Talabat style...'):
-            memory_str = "\n".join(st.session_state.golden_examples)
+        with st.spinner('Generating professional logs...'):
             
-            # الـ Prompt دلوقتي بيستخدم الـ selected_drive اللي اخترته من القائمة
             prompt = f"""
             You are a Senior Talabat Agent. Generate FOUR distinct variations (A, B, C, D).
-            Memory: {memory_str}
             CONTACT DRIVE: {selected_drive}
             
             CORE INSTRUCTION: 
-            The CONTACT DRIVE is the core backbone of the case. 
-            All reports must classify the issue based on the selected Contact Drive: '{selected_drive}'.
+            Generate the [COMMENT] section strictly in this dense format:
+            [Issue Category] // [Status/Logic Details] (( [Sub-logic details] )) // [Outcome] // [Next Steps] // [Info Channel]
             
             Format tags: [OPTION_A], [OPTION_B], [OPTION_C], [OPTION_D].
             Inside each:
             [SUMMARY]: ...
-            [DATA]: [Issue] // [Details] // [Action]
+            [COMMENT]: ... (Follow the strict format above)
             
             RULES: 
             - NO Order ID.
-            - NO UNCLEAR.
-            - NO ARABIC.
-            - Use abbreviations (CST, RST, RNA).
+            - NO Arabic.
+            - Use abbreviations (CST, RST, RNA, OT, TGO, TMP).
+            - Ensure the COMMENT section looks exactly like a technical log.
             """
             
             try:
@@ -128,7 +124,7 @@ if st.session_state.raw_response:
                         st.session_state.voted = True
                         st.rerun()
         else:
-            st.success("✅ Training completed successfully.")
+            st.success("✅ Log saved.")
             if st.button("🔄 Reset"):
                 st.session_state.voted = False
                 st.rerun()
