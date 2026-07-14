@@ -3,14 +3,14 @@ import os
 from groq import Groq
 
 # 1. Config
-st.set_page_config(page_title="Surgical Pro v19", layout="centered")
+st.set_page_config(page_title="Surgical Pro v20", layout="centered")
 
 # State Management
 if "golden_examples" not in st.session_state: st.session_state.golden_examples = []
 if "selected_result" not in st.session_state: st.session_state.selected_result = ""
 if "voted" not in st.session_state: st.session_state.voted = False
 
-st.title("🚀 Surgical Pro v19")
+st.title("🚀 Surgical Pro v20")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
@@ -18,25 +18,32 @@ client = Groq(api_key=api_key)
 # Input Section
 chat_input = st.text_area("Paste chat transcript:", height=150)
 
+# الخانات المطلوبة
 col1, col2 = st.columns(2)
 with col1:
-    contact_drive = st.text_input("Contact Drive:", placeholder="e.g., cooking instruction")
+    contact_drive = st.text_input("Contact Drive (e.g., cooking instruction):", placeholder="e.g., cooking instruction")
 with col2:
-    custom_notes = st.text_input("Additional Notes:", placeholder="e.g., Emphasize refund...")
+    custom_notes = st.text_input("Additional Notes:", placeholder="e.g., specific complaints...")
 
 if st.button("Generate 4 Variations"):
     if chat_input:
         st.session_state.voted = False
-        with st.spinner('Driving the analysis...'):
+        with st.spinner('Analyzing based on your Drive...'):
             memory_str = "\n".join(st.session_state.golden_examples)
             
-            # بناء الـ Prompt الجديد
+            # الـ Prompt الجديد: الـ Contact Drive هو الموجه الأساسي
             prompt = f"""
             You are a Senior Talabat Agent. Generate FOUR distinct variations (A, B, C, D).
             
-            Memory (Adopt this style): {memory_str}
-            CONTACT DRIVE: {contact_drive if contact_drive else "Professional & Neutral"}
-            ADDITIONAL CONTEXT: {custom_notes if custom_notes else "None"}
+            Memory (Use this style): {memory_str}
+            
+            CORE INSTRUCTION: 
+            Use the CONTACT DRIVE below to categorize the issue. 
+            Ignore generic categories like 'Missing Item' if the drive suggests otherwise. 
+            Prioritize the 'Contact Drive' as the main [Issue].
+            
+            CONTACT DRIVE: {contact_drive if contact_drive else "General Inquiry"}
+            ADDITIONAL NOTES: {custom_notes if custom_notes else "None"}
             
             Format for each:
             [OPTION_X]
@@ -44,7 +51,6 @@ if st.button("Generate 4 Variations"):
             [DATA]: [Issue] // [Details] // [Action] // [Order ID]
             
             STRICT RULES:
-            - Focus heavily on the CONTACT DRIVE instruction.
             - NO UNCLEAR section.
             - NO ARABIC.
             - Use abbreviations (CST, RST, RNA).
@@ -59,6 +65,7 @@ if st.button("Generate 4 Variations"):
 # 2. Display & Selection
 if "raw_response" in st.session_state:
     raw = st.session_state.raw_response
+    
     options = {"A": "", "B": "", "C": "", "D": ""}
     for opt in ["A", "B", "C", "D"]:
         try:
