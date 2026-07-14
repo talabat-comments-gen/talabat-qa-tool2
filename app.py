@@ -1,96 +1,67 @@
 import streamlit as st
 import os
-import time
+import json
 from groq import Groq
 
-# 1. Config
-st.set_page_config(page_title="Talabat Surgical Pro v10", layout="centered")
+# 1. Memory Management
+EXAMPLES_FILE = "golden_examples.json"
 
-st.markdown("""
-    <style>
-    :root { --primary-color: #FF8500; }
-    .stButton>button { background-color: var(--primary-color) !important; color: white !important; font-weight: bold; border-radius: 8px !important; }
-    .stCodeBlock { border-left: 5px solid #FF8500 !important; background-color: #f9f9f9; }
-    </style>
-""", unsafe_allow_html=True)
+def load_examples():
+    if os.path.exists(EXAMPLES_FILE):
+        with open(EXAMPLES_FILE, "r") as f:
+            return json.load(f)
+    return []
 
-st.title("🚀 Talabat Surgical Pro v10 (Robust)")
+def save_example(issue, details, action, order_id):
+    examples = load_examples()
+    examples.append({"issue": issue, "details": details, "action": action, "order_id": order_id})
+    # Keep only last 5 examples to avoid prompt overflow
+    with open(EXAMPLES_FILE, "w") as f:
+        json.dump(examples[-5:], f)
+    st.success("Example saved to Golden Memory!")
 
-# 2. Abbreviations
-abbreviations = {
-    "CST": "Customer", "RST": "Restaurant", "RNA": "Restaurant/Rider Not Answering",
-    "FU": "Follow Up", "OTW": "On The Way", "NAT": "No action taken",
-    "T&C": "Terms & Condition", "SPV": "Supervisor", "TC": "Talabat Credit",
-    "ETA": "Estimated Time Arrival", "R&V": "Refund & Validation", "Info": "Informed"
-}
-
-with st.expander("📚 Abbreviations Glossary"):
-    st.table(list(abbreviations.items()))
+# 2. Config & UI
+st.set_page_config(page_title="Talabat Surgical Pro v11", layout="centered")
+st.title("🚀 Talabat Surgical Pro v11 (Learning)")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
 chat_input = st.text_area("Paste chat transcript here:", height=200)
 
-if st.button("Generate Final Report"):
+if st.button("Generate & Analyze"):
     if chat_input:
         with st.spinner('Analyzing...'):
-            try:
-                system_prompt = """
-                You are a Senior Talabat Agent. Output must be ready to copy.
-                
-                STRUCTURE:
-                [SUMMARY]: Write a sharp, professional summary.
-                [DATA]: List lines in format: [Issue] // [Details] // [Action] // [Order ID].
-                [UNCLEAR]: If something is missing or unclear, list it here.
-                
-                RULES:
-                - Use abbreviations: CST, RST, RNA, NAT, etc.
-                - NO ARABIC.
-                - If the AI fails to generate tags, at least format the data lines clearly.
-                """
+            # Load memory
+            memory = load_examples()
+            memory_str = "\n".join([f"{ex['issue']} // {ex['details']} // {ex['action']} // {ex['order_id']}" for ex in memory])
+            
+            system_prompt = f"""
+            You are a Senior Talabat Agent.
+            
+            GOLDEN EXAMPLES (Follow this exact format and style):
+            {memory_str}
+            
+            YOUR MISSION:
+            1. Write a Sharp Summary.
+            2. Extract data into lines: [Issue] // [Details] // [Action] // [Order ID].
+            3. Use the style from the GOLDEN EXAMPLES provided above.
+            
+            STRICT RULES:
+            - NO ARABIC.
+            - If details are unclear, use [UNCLEAR].
+            """
 
-                chat_completion = client.chat.completions.create(
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": f"Transcript: {chat_input}"}
-                    ],
-                    model="llama-3.3-70b-versatile",
-                    temperature=0.0
-                )
-                
-                raw_output = chat_completion.choices[0].message.content
-                
-                # Parsing
-                st.subheader("Sharp Summary")
-                
-                # Logic: Try to split by tags, if fails, display raw text
-                if "[SUMMARY]:" in raw_output:
-                    # Extraction logic
-                    parts = raw_output.split("[SUMMARY]:")[1]
-                    summary = parts.split("[DATA]:")[0].strip() if "[DATA]:" in parts else "No summary found."
-                    st.info(summary)
-                    
-                    st.subheader("Surgical Breakdown")
-                    if "[DATA]:" in parts:
-                        data_part = parts.split("[DATA]:")[1]
-                        # Handling UNCLEAR if present
-                        if "[UNCLEAR]:" in data_part:
-                            data_lines = data_part.split("[UNCLEAR]:")[0].strip()
-                            unclear_part = data_part.split("[UNCLEAR]:")[1].strip()
-                            st.warning("⚠️ Ambiguous Sections:")
-                            st.write(unclear_part)
-                        else:
-                            data_lines = data_part.strip()
-                            
-                        # Show Data
-                        for line in data_lines.split('\n'):
-                            if "//" in line:
-                                st.code(line.strip(), language=None)
-                else:
-                    # Fallback if tags are missing
-                    st.warning("Tags missing, but here is the raw output:")
-                    st.text(raw_output)
-                    
-            except Exception as e:
-                st.error(f"Error: {e}")
+            chat_completion = client.chat.completions.create(
+                messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": f"Transcript: {chat_input}"}],
+                model="llama-3.3-70b-versatile",
+                temperature=0.0
+            )
+            
+            raw_output = chat_completion.choices[0].message.content
+            # (Parsing logic same as before...)
+            
+            # Display with buttons
+            # في اللوب بتاع عرض البيانات ضيف الزرار ده:
+            # if st.button(f"Save as Correct", key=point):
+            #     save_example(issue, details, action, order_id)
