@@ -3,7 +3,7 @@ import os
 from groq import Groq
 
 # 1. Page Config & Professional Branding
-st.set_page_config(page_title="Talabat Surgical Pro", layout="centered")
+st.set_page_config(page_title="Talabat Comment Generator", layout="centered")
 
 # Custom CSS for Animation, Talabat Colors, and Dynamic Dark/Light Support
 st.markdown("""
