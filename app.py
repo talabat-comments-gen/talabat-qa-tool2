@@ -3,39 +3,32 @@ import os
 import re
 from groq import Groq
 
-# 1. Config & Styling
+# 1. Config & UI Styling
 st.set_page_config(page_title="Talabat Comment Generator", layout="centered", page_icon="🍔")
 
-# Injecting Talabat Styling
+# Injecting Talabat Styling (Responsive to Theme)
 st.markdown("""
     <style>
     :root {
         --talabat-orange: #FF7800;
-        --talabat-white: #ffffff;
     }
-    /* Force Light/Clean background to fix dark mode issues */
-    .stApp { background-color: var(--talabat-white); color: #333333; }
-    
-    /* Talabat Style Buttons */
+    /* Talabat Style Buttons - Works in both Light/Dark */
     .stButton>button {
         background-color: var(--talabat-orange) !important;
         color: white !important;
         border-radius: 25px !important;
         border: none !important;
         font-weight: 700 !important;
-        padding: 0.5rem 1rem !important;
         transition: 0.3s !important;
     }
     .stButton>button:hover {
         background-color: #e66c00 !important;
         transform: scale(1.02);
     }
-    
-    /* Headers & Text */
-    h1, h2, h3 { color: #333333 !important; }
-    
-    /* Containers */
-    div[data-testid="stCodeBlock"] { border-radius: 10px; border: 1px solid #e0e0e0; }
+    /* Fixing the background color issue by removing the forced white */
+    .stApp {
+        /* No hardcoded white background anymore */
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -43,7 +36,7 @@ st.markdown("""
 if "golden_examples" not in st.session_state: st.session_state.golden_examples = []
 if "voted" not in st.session_state: st.session_state.voted = False
 if "raw_response" not in st.session_state: st.session_state.raw_response = None
-if "selected_result" not in st.session_state: st.selected_result = ""
+if "selected_result" not in st.session_state: st.session_state.selected_result = ""
 
 # 3. Header
 st.title("🍔 Talabat Comment Generator")
