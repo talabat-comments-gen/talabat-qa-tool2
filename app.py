@@ -3,7 +3,7 @@ import os
 from groq import Groq
 
 st.set_page_config(page_title="Talabat Log Engine", layout="centered")
-st.title("🚀 Talabat Log Engine (Simple)")
+st.title("🚀 Talabat Log Engine (Agent Mode)")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 
@@ -21,20 +21,20 @@ chat_input = st.text_area("Paste Chat Transcript Here:", height=400)
 
 if st.button("Generate Log"):
     if chat_input:
-        with st.spinner('Simplifying...'):
+        with st.spinner('Summarizing...'):
             try:
-                # ده الـ Prompt الجديد: بسيط، مباشر، بدون أي تأليف
+                # الـ Prompt ده هيخليه يكتب بلسانك أنت (بصيغة المتكلم)
                 system_prompt = """
-                You are a simple note-taker. 
-                Write the log using simple, broken-down English.
-                DO NOT add any status codes like 'DELIVERED'.
-                DO NOT use formal words like 'escalated'.
-                Use this format:
-                CST: [Issue in few words] // Agent: [What I did in few words]
+                You are the agent. Write a summary of the chat as if YOU are the agent (use 'I').
+                Combine all actions into one single, short paragraph.
+                DO NOT repeat 'CST' or 'Agent' for every line.
+                Format: 
+                CST: [Issue] // Agent: [I did X, Y, Z, then ended chat nicely]
                 
                 Rules:
-                1. If I did nothing, write 'NAT'.
-                2. No extra explanations. Just the facts.
+                1. Always use 'I' when talking about agent actions.
+                2. If the conversation finished, end with 'ended chat nicely'.
+                3. Keep it professional and very short.
                 """
 
                 chat_completion = client.chat.completions.create(
