@@ -3,44 +3,36 @@ import os
 import time
 from groq import Groq
 
-# 1. Page Config & Professional Branding
-st.set_page_config(page_title="Talabat Surgical Pro v3", layout="centered")
+# 1. Page Config
+st.set_page_config(page_title="Talabat Surgical Pro v4", layout="centered")
 
 st.markdown("""
     <style>
     :root { --primary-color: #FF8500; }
     .stButton>button { background-color: var(--primary-color) !important; color: white !important; font-weight: bold; border-radius: 8px !important; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .animated-result { animation: fadeIn 0.6s ease-out; }
+    .stCodeBlock { background-color: #f4f4f4; border-left: 5px solid #FF8500; }
     </style>
 """, unsafe_allow_html=True)
 
-# 2. Dictionary of Abbreviations
+# 2. Abbreviations
 abbreviations = {
-    "CST / Cust": "Customer", "RST / Rest": "Restaurant", "WDT": "Within Delivery Time",
+    "CST/Cust": "Customer", "RST/Rest": "Restaurant", "WDT": "Within Delivery Time",
     "RNA": "Restaurant/Rider Not Answering", "FU": "Follow Up", "OTW": "On The Way",
     "ROP": "Restaurant Operator", "SLA": "Service Level Agreement", "ASAP": "As Soon As Possible",
     "Info": "Informed", "TC": "Talabat Credit", "ETA": "Estimated Time Arrival",
     "R&V": "Refund & Validation", "OT": "Offline Ticket", "T&C": "Terms & Condition",
     "SPV": "Supervisor", "TL": "Team Leader", "SME": "Subject Matter Expert",
-    "VP": "Vendor Portal", "PDT / DT": "Promise Delivery Time / Delivery Time",
-    "PIC": "Picture", "SS": "Screenshot", "Ven": "Vendor", "Comp": "Compensation",
-    "WFA": "Waiting For Answer", "OSU": "Referring to R&V", "EDT": "Exceeded Delivery Time",
-    "NFA": "No further action required", "NAT": "No action taken", "NFAT": "No further action taken",
-    "Bot": "Chatbot", "SOP": "Standard Operation Procedures", "HVC": "High-Value Customer",
-    "App": "Application", "CNA / NA": "Customer Not Answering", "BOA": "Backoffice",
-    "Min / Mins": "Minute(s)", "CBH": "Customer Bad History", "CGH": "Customer Good History",
-    "Msg": "Message", "Under Prep": "Under Preparation", "Dr": "Doctor",
-    "H / hrs": "Hour(s)", "HC": "Hero Care", "BRB": "Be Right Back",
-    "PR": "Partial Refund", "FR": "Full Refund", "T2": "Tier 2", "T3": "Tier 3",
-    "ANS": "Answered", "Num": "Number", "SMS": "Short Message Service",
-    "Acc": "Account", "RM": "Rider Manager", "AM": "Account Manager",
-    "MCB": "Manager Call Back", "BL": "Backlog"
+    "VP": "Vendor Portal", "PDT/DT": "Promise Delivery Time", "PIC": "Picture",
+    "SS": "Screenshot", "Ven": "Vendor", "Comp": "Compensation", "WFA": "Waiting For Answer",
+    "OSU": "Referring to R&V", "EDT": "Exceeded Delivery Time", "NFA": "No further action",
+    "NAT": "No action taken", "NFAT": "No further action taken", "Bot": "Chatbot",
+    "SOP": "Standard Operation Procedures", "HVC": "High-Value Customer",
+    "CBH": "Customer Bad History", "CGH": "Customer Good History", "PR": "Partial Refund",
+    "FR": "Full Refund", "BL": "Backlog", "MCB": "Manager Call Back"
 }
 
-st.title("🚀 Talabat Surgical Pro v3")
+st.title("🚀 Talabat Surgical Pro v4 (Linguistic Engine)")
 
-# Glossary Expander
 with st.expander("📚 Abbreviations Glossary"):
     st.table(list(abbreviations.items()))
 
@@ -49,39 +41,40 @@ client = Groq(api_key=api_key)
 
 chat_input = st.text_area("Paste chat transcript here:", height=200)
 
-if st.button("Extract Data (Maximum Precision)"):
+if st.button("Generate Final Report"):
     if chat_input:
-        # 3. Countdown Animation
-        with st.spinner('Initializing Surgical Systems...'):
+        # Countdown
+        with st.spinner('Linguistic Analysis In Progress...'):
             progress_bar = st.progress(0)
             status_text = st.empty()
             for i in range(5):
-                time.sleep(1) # 5 seconds delay
+                time.sleep(1)
                 progress_bar.progress((i + 1) * 20)
-                status_text.text(f"Analyzing nuance {i+1}/5...")
-            status_text.text("Analysis Complete!")
+                status_text.text(f"Syntax & Context Mapping {i+1}/5...")
+            status_text.text("Logic Verified!")
 
-        # 4. Processing
         try:
             system_prompt = """
-            You are a Surgical Data Extraction Engine. 
-            PRECISION LEVEL: 200%. 
+            You are a Senior Linguistic Analyst and Data Extraction Expert.
+            YOUR GOAL: Extract data from the chat with 100% syntactic accuracy.
             
-            YOUR MISSION:
-            1. Read the chat.
-            2. Sharp Summary: Write one single, punchy, professional sentence summarizing the issue in English.
-            3. Extract Data: Identify 4 distinct, non-repetitive, highly accurate data points.
+            STEP 1: LINGUISTIC ANALYSIS
+            - Understand the Egyptian colloquial syntax (Egyptian Arabic).
+            - Identify the intent (e.g., Complaint, Query, Demand).
+            - Reconstruct the thought process into professional English grammar.
             
-            STRICT RULES:
+            STEP 2: EXTRACTION RULES
             - Output format:
-              [SUMMARY]: (One professional English sentence)
+              [SUMMARY]: (One professional, grammatically perfect English sentence)
               [DATA]:
               [Issue] // [Details] // [Action] // [Order ID]
             
-            - SYSTEM LOGIC: If agent is restricted, ALWAYS write: 'no action taken'.
-            - TRANSLATION: Literal translation from Arabic to English. NO ARABIC in output.
-            - Order ID: Numeric only. If invalid, 'N/A'.
-            - NO filler, NO headers, JUST the Summary and Data.
+            STRICT RULES:
+            - NO ARABIC in output.
+            - Agent Action: If restricted, use: 'no action taken'.
+            - Order ID: Numeric only. Write 'N/A' if invalid.
+            - Do not guess. If information is ambiguous, write 'N/A'.
+            - Final Polish: The output MUST be ready for professional use. No typos, no broken sentences.
             """
 
             chat_completion = client.chat.completions.create(
@@ -95,26 +88,21 @@ if st.button("Extract Data (Maximum Precision)"):
             
             raw_output = chat_completion.choices[0].message.content
             
-            # Parsing
-            summary = ""
-            data_points = []
+            # Simple Parsing
             if "[SUMMARY]:" in raw_output and "[DATA]:" in raw_output:
                 summary = raw_output.split("[SUMMARY]:")[1].split("[DATA]:")[0].strip()
                 data_raw = raw_output.split("[DATA]:")[1].strip()
                 data_points = [line.strip() for line in data_raw.split('\n') if line.strip()]
 
-            # Display
-            st.metric("Points Extracted", len(data_points))
-            st.subheader("Sharp Summary")
-            st.info(summary)
-            
-            st.subheader("Surgical Breakdown")
-            st.markdown('<div class="animated-result">', unsafe_allow_html=True)
-            for point in data_points:
-                st.code(point, language=None)
-            st.markdown('</div>', unsafe_allow_html=True)
+                st.metric("Issues Found", len(data_points))
+                st.subheader("Sharp Summary")
+                st.info(summary)
+                
+                st.subheader("Surgical Breakdown")
+                for point in data_points:
+                    st.code(point, language=None)
+            else:
+                st.error("Failed to parse. Please try again.")
             
         except Exception as e:
             st.error(f"Error: {e}")
-    else:
-        st.warning("Please paste the chat transcript.")
