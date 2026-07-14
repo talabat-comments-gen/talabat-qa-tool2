@@ -1,10 +1,9 @@
 import streamlit as st
 import os
-import time
 from groq import Groq
 
-st.set_page_config(page_title="Talabat Log Engine", layout="centered")
-st.title("🚀 Talabat Log Engine (Strict Mode)")
+st.set_page_config(page_title="Talabat Raw Logger", layout="centered")
+st.title("🚀 Talabat Event Logger")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
 
@@ -18,23 +17,23 @@ except Exception as e:
     st.error(f"Error: {e}")
     st.stop()
 
-chat_input = st.text_area("Paste chat here (No fluff, just data):", height=200)
+chat_input = st.text_area("Paste chat here:", height=200)
 
 if st.button("Generate Log"):
     if chat_input:
-        with st.spinner('Logging...'):
+        with st.spinner('Logging events...'):
             try:
-                # هذا هو الـ Prompt "الديكتاتوري"
+                # الـ Prompt ده ممنوع فيه التفكير، ممنوع فيه الحالة، وممنوع فيه الرغي
                 system_prompt = """
-                You are a data logger. Extract facts ONLY.
-                STRICTLY FORBIDDEN: Apologies, greetings, polite filler, "I".
-                IF NOT STATED IN CHAT, DO NOT WRITE IT.
+                You are a pure event logger. 
+                1. Strip ALL apologies, greetings, thanks, and polite fluff.
+                2. DO NOT write any 'Status', 'Outcome', or 'Resolution'. 
+                3. DO NOT interpret. ONLY state what the Customer asked and what the Agent did.
+                4. Use bullet points.
                 
                 Format:
-                CST: [Problem]
-                Agent: [Action 1, Action 2]
-                Notes: [Specifics]
-                Status: ended chat since customer not responding
+                Customer: [Core request or action]
+                Agent: [Action taken]
                 """
 
                 chat_completion = client.chat.completions.create(
@@ -43,10 +42,10 @@ if st.button("Generate Log"):
                         {"role": "user", "content": f"Transcript: {chat_input}"}
                     ],
                     model="llama-3.3-70b-versatile",
-                    temperature=0.0 # التيمبرتشر 0 بيخليه "ينفذ" الأوامر حرفياً
+                    temperature=0.0
                 )
                 
-                st.text_area("Final Log (Raw Facts):", value=chat_completion.choices[0].message.content, height=200)
+                st.text_area("Event Log:", value=chat_completion.choices[0].message.content, height=250)
                 
             except Exception as e:
                 st.error(f"Groq Error: {e}")
