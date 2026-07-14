@@ -4,7 +4,7 @@ import re
 from groq import Groq
 
 # 1. Config
-st.set_page_config(page_title="Talabat Log Tool", layout="wide")
+st.set_page_config(page_title="Talabat comment tool", layout="wide")
 
 # 2. Updated Master List (Categorized and Cleaned)
 DRIVE_LIST = [
