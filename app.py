@@ -4,7 +4,7 @@ import time
 from groq import Groq
 
 # 1. Config
-st.set_page_config(page_title="Talabat Surgical Pro v9", layout="centered")
+st.set_page_config(page_title="Talabat Surgical Pro v10", layout="centered")
 
 st.markdown("""
     <style>
@@ -14,7 +14,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🚀 Talabat Surgical Pro v9 (Clarity Engine)")
+st.title("🚀 Talabat Surgical Pro v10 (Robust)")
 
 # 2. Abbreviations
 abbreviations = {
@@ -34,21 +34,20 @@ chat_input = st.text_area("Paste chat transcript here:", height=200)
 
 if st.button("Generate Final Report"):
     if chat_input:
-        with st.spinner('Analyzing Ambiguities...'):
+        with st.spinner('Analyzing...'):
             try:
                 system_prompt = """
-                You are a Senior Talabat Agent. Your output must be ready to copy without review.
+                You are a Senior Talabat Agent. Output must be ready to copy.
                 
-                YOUR MISSION:
-                1. Write a Sharp Summary (one professional sentence).
-                2. Extract data into lines with this EXACT format: [Issue] // [Details] // [Action] // [Order ID].
-                3. CRITICAL: AMBIGUITY DETECTION. If any part of the chat is vague, missing details, or unclear (e.g., missing Order ID, unclear customer request), DO NOT GUESS.
-                   - List such parts under a separate '[UNCLEAR]' section and explain why (e.g., "Missing Order ID", "Ambiguous request").
+                STRUCTURE:
+                [SUMMARY]: Write a sharp, professional summary.
+                [DATA]: List lines in format: [Issue] // [Details] // [Action] // [Order ID].
+                [UNCLEAR]: If something is missing or unclear, list it here.
                 
-                STRICT RULES:
-                - Use provided abbreviations (CST, RST, RNA, NAT).
+                RULES:
+                - Use abbreviations: CST, RST, RNA, NAT, etc.
                 - NO ARABIC.
-                - If the info is unclear, the [UNCLEAR] section is MANDATORY.
+                - If the AI fails to generate tags, at least format the data lines clearly.
                 """
 
                 chat_completion = client.chat.completions.create(
@@ -62,39 +61,36 @@ if st.button("Generate Final Report"):
                 
                 raw_output = chat_completion.choices[0].message.content
                 
-                # Parsing logic for 3 sections
-                summary = "System error."
-                data_points = []
-                unclear_points = []
-                
-                if "[SUMMARY]:" in raw_output:
-                    parts = raw_output.split("[SUMMARY]:")[1]
-                    # Split logic
-                    if "[DATA]:" in parts:
-                        summary = parts.split("[DATA]:")[0].strip()
-                        remaining = parts.split("[DATA]:")[1]
-                        
-                        if "[UNCLEAR]:" in remaining:
-                            data_raw = remaining.split("[UNCLEAR]:")[0].strip()
-                            unclear_raw = remaining.split("[UNCLEAR]:")[1].strip()
-                            unclear_points = [line.strip() for line in unclear_raw.split('\n') if line.strip()]
-                        else:
-                            data_raw = remaining.strip()
-                        
-                        data_points = [line.strip() for line in data_raw.split('\n') if line.strip() and "//" in line]
-
-                # Display
+                # Parsing
                 st.subheader("Sharp Summary")
-                st.info(summary)
                 
-                st.subheader("Surgical Breakdown")
-                for point in data_points:
-                    st.code(point, language=None)
-                
-                if unclear_points:
-                    st.warning("⚠️ Ambiguous/Unclear Sections:")
-                    for point in unclear_points:
-                        st.error(point)
+                # Logic: Try to split by tags, if fails, display raw text
+                if "[SUMMARY]:" in raw_output:
+                    # Extraction logic
+                    parts = raw_output.split("[SUMMARY]:")[1]
+                    summary = parts.split("[DATA]:")[0].strip() if "[DATA]:" in parts else "No summary found."
+                    st.info(summary)
+                    
+                    st.subheader("Surgical Breakdown")
+                    if "[DATA]:" in parts:
+                        data_part = parts.split("[DATA]:")[1]
+                        # Handling UNCLEAR if present
+                        if "[UNCLEAR]:" in data_part:
+                            data_lines = data_part.split("[UNCLEAR]:")[0].strip()
+                            unclear_part = data_part.split("[UNCLEAR]:")[1].strip()
+                            st.warning("⚠️ Ambiguous Sections:")
+                            st.write(unclear_part)
+                        else:
+                            data_lines = data_part.strip()
+                            
+                        # Show Data
+                        for line in data_lines.split('\n'):
+                            if "//" in line:
+                                st.code(line.strip(), language=None)
+                else:
+                    # Fallback if tags are missing
+                    st.warning("Tags missing, but here is the raw output:")
+                    st.text(raw_output)
                     
             except Exception as e:
                 st.error(f"Error: {e}")
