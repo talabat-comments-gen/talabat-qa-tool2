@@ -1,6 +1,5 @@
 import streamlit as st
 import os
-import re
 from groq import Groq
 
 # 1. Config & Styling
@@ -35,13 +34,11 @@ CONTACT_DRIVES = [
 ]
 
 # 3. State Management
-if "golden_examples" not in st.session_state: st.session_state.golden_examples = []
-if "voted" not in st.session_state: st.session_state.voted = False
-if "raw_response" not in st.session_state: st.session_state.raw_response = None
-if "selected_result" not in st.session_state: st.session_state.selected_result = ""
+if "generated_comment" not in st.session_state: st.session_state.generated_comment = None
 
 # 4. Header
 st.title("🍔 Talabat Comment Generator")
+st.markdown("### Focus: Resolution & Action Taken")
 st.markdown("---")
 
 api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
@@ -49,71 +46,47 @@ client = Groq(api_key=api_key)
 
 # 5. Input Section
 chat_input = st.text_area("Paste Chat Transcript:", height=150, placeholder="Paste conversation here...")
-selected_drive = st.selectbox("Select Contact Drive:", options=CONTACT_DRIVES) # الـ Scroll رجعت هنا!
+selected_drive = st.selectbox("Select Contact Drive (Sets the Case Stance):", options=CONTACT_DRIVES)
 
-if st.button("🚀 Generate Distinct Variations"):
+if st.button("🚀 Generate Final Comment"):
     if chat_input:
-        st.session_state.voted = False
-        with st.spinner('Generating professional, distinct variants...'):
+        with st.spinner('Crafting the perfect resolution log...'):
             
             prompt = f"""
-            You are a Senior Talabat Agent. Generate FOUR distinct variations (A, B, C, D).
+            You are a Senior Talabat Agent. Your goal is to write ONE comprehensive, professional, and detailed log comment based on the chat transcript and the selected Contact Drive.
+            
             CONTACT DRIVE: {selected_drive}
             
             CORE INSTRUCTION:
-            - Variation A: Focus on Empathy and Apology.
-            - Variation B: Focus on Resolution and Action Taken.
-            - Variation C: Focus on Policy and Process explanation.
-            - Variation D: Focus on Conciseness and Speed.
+            - Focus HEAVILY on Resolution and Action Taken.
+            - Explain the stance of the case clearly based on the Contact Drive provided.
+            - Ensure the tone is professional, technical, and objective.
             
-            Generate the [COMMENT] section strictly in this dense format:
-            [Issue Category] // [Status/Logic Details] (( [Sub-logic details] )) // [Outcome] // [Next Steps] // [Info Channel]
-            
-            Format tags: [OPTION_A], [OPTION_B], [OPTION_C], [OPTION_D].
-            Inside each:
-            [SUMMARY]: ...
-            [COMMENT]: ...
+            Format strictly in this dense format:
+            [Issue Category] // [Status/Logic Details] (( [Sub-logic details: Resolution and Actions taken] )) // [Outcome] // [Next Steps] // [Info Channel]
             
             RULES: 
             - NO Order ID.
             - NO Arabic.
             - Use abbreviations (CST, RST, RNA, OT, TGO, TMP).
+            - The output must be ONE long paragraph of dense technical details.
             """
             
             try:
                 response = client.chat.completions.create(
                     messages=[{"role": "system", "content": prompt}, {"role": "user", "content": f"Transcript: {chat_input}"}],
-                    model="llama-3.1-8b-instant", temperature=0.7
+                    model="llama-3.1-8b-instant", temperature=0.5
                 )
-                st.session_state.raw_response = response.choices[0].message.content
+                st.session_state.generated_comment = response.choices[0].message.content
             except Exception as e:
                 st.error(f"Error: {str(e)}")
 
-# 6. Parsing & Display
-if st.session_state.raw_response:
-    raw = st.session_state.raw_response
-    parts = re.split(r'\[OPTION_[A-D]\]', raw)
-    options = [p.strip() for p in parts if p.strip()]
-
-    if len(options) >= 4:
-        st.markdown("### Choose the Best Option:")
-        for i, opt_label in enumerate(['A', 'B', 'C', 'D']):
-            with st.container(border=True):
-                st.subheader(f"Option {opt_label}")
-                st.code(options[i], language=None)
-                if st.button(f"✅ Vote & Train {opt_label}", key=f"btn_{opt_label}"):
-                    st.session_state.selected_result = options[i]
-                    st.session_state.golden_examples.append(options[i])
-                    st.session_state.voted = True
-                    st.rerun()
-    else:
-        st.warning("AI output format error. Showing raw output:")
-        st.code(raw)
-
-if st.session_state.voted:
-    st.divider()
-    st.success("🎉 Learned! Select 'Reset' to clear.")
+# 6. Display Result
+if st.session_state.generated_comment:
+    st.markdown("### ✅ Final Resolution Log")
+    with st.container(border=True):
+        st.write(st.session_state.generated_comment)
+        
     if st.button("🔄 Reset"):
-        st.session_state.voted = False
-        st.session_state.raw_response = None
+        st.session_state.generated_comment = None
         st.rerun()
